@@ -1,0 +1,4 @@
+yfinance
+pandas
+groq
+python-dotenvs
