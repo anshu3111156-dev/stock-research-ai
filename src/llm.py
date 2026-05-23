@@ -45,7 +45,8 @@ OUTPUT FORMAT — exactly these keys:
     "one_year_return": "string"
   },
   "watch_out_for": "1-2 sentences on most important thing to monitor",
-  "news_context": "2-3 sentences commenting on the recent news headlines and what they mean for the stock"
+  "news_context": "2-3 sentences commenting on the recent news headlines and what they mean for the stock",
+  "annual_report_insights": "3-4 sentences of key insights from the company annual report covering strategy, risks and outlook"
 }
 """
 
@@ -81,10 +82,10 @@ def parse_json(raw):
             raw = raw[4:]
     return json.loads(raw.strip())
 
-def generate_stock_brief(data, signals, ticker):
+def generate_stock_brief(data, signals, ticker, vectorstore=None):
     prompt = build_stock_prompt(data, signals)
 
-    # Fetch news and append to prompt
+    # Add news headlines
     headlines = get_company_news(ticker)
     if headlines and headlines != ["Could not fetch news."]:
         news_text = "\n".join(f"- {h}" for h in headlines)
@@ -99,6 +100,34 @@ Comment on what this news means for the stock — opportunities or concerns.
     else:
         prompt += "\n\nnews_context: No recent news available."
 
+    # Add RAG insights from annual report if vectorstore available
+    if vectorstore is not None:
+        try:
+            rag_questions = [
+                "What is the company strategy and future outlook?",
+                "What are the key risks mentioned by management?",
+                "What are the capital expenditure and growth plans?",
+            ]
+            rag_context = ""
+            for q in rag_questions:
+                results = vectorstore.similarity_search(q, k=3)
+                for doc in results:
+                    page = doc.metadata.get('page', '?')
+                    rag_context += f"\n[Page {page}] {doc.page_content}\n"
+
+            prompt += f"""
+
+INSIGHTS FROM COMPANY ANNUAL REPORT:
+{rag_context}
+
+Use these annual report insights to fill the annual_report_insights field in your JSON.
+Summarise the key strategic points, risks and outlook from the report in simple English.
+"""
+        except Exception as e:
+            prompt += "\n\nannual_report_insights: Annual report data not available."
+    else:
+        prompt += "\n\nannual_report_insights: Annual report not loaded for this stock."
+
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
@@ -106,7 +135,7 @@ Comment on what this news means for the stock — opportunities or concerns.
             {"role": "user",   "content": prompt}
         ],
         temperature=0.3,
-        max_tokens=1500
+        max_tokens=2000
     )
     return parse_json(response.choices[0].message.content)
 

@@ -16,6 +16,22 @@ load_dotenv(find_dotenv())
 OUTPUT_FOLDER = "portfolio_report"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
+# ── LOAD RAG VECTORSTORE ──────────────────
+
+vectorstore = None
+FAISS_INDEX_PATH = "data/faiss_index"
+
+if os.path.exists(FAISS_INDEX_PATH):
+    try:
+        print("  Loading annual report index...")
+        from src.rag import load_faiss_index
+        vectorstore = load_faiss_index()
+        print("  Annual report index loaded.\n")
+    except Exception as e:
+        print(f"  Could not load annual report index: {e}\n")
+else:
+    print("  No annual report index found — RAG insights will be skipped.\n")
+
 # ── FINANCIAL GLOSSARY ────────────────────
 
 FINANCIAL_GLOSSARY = {
@@ -66,6 +82,8 @@ def print_stock_brief(brief, history):
     print(brief['watch_out_for'])
     print("\n📰 NEWS CONTEXT")
     print(brief.get('news_context', 'No recent news available.'))
+    print("\n📋 ANNUAL REPORT INSIGHTS")
+    print(brief.get('annual_report_insights', 'Annual report not available.'))
     print("\n📋 KEY METRICS")
     for key, value in brief['key_metrics'].items():
         print(f"  {key.replace('_',' ').title():<20} {value}")
@@ -125,6 +143,7 @@ def save_stock_report(ticker, brief, signals, history):
         f.write(f"\nINVESTOR PROFILE\n{brief['investor_profile']}\n\n")
         f.write(f"WATCH OUT FOR\n{brief['watch_out_for']}\n\n")
         f.write(f"NEWS CONTEXT\n{brief.get('news_context', 'No recent news available.')}\n\n")
+        f.write(f"ANNUAL REPORT INSIGHTS\n{brief.get('annual_report_insights', 'Not available.')}\n\n")
         if history:
             f.write("PRICE HISTORY\n")
             f.write(f"  52-Week High: ₹{history['high_52w']:,.2f}\n")
@@ -182,7 +201,7 @@ def print_comparison_table(all_stock_data):
 
 print("\n" + "="*55)
 print("  STOCK RESEARCH AI — by Anshika Singh")
-print("  Powered by yfinance + Groq (Llama 3.3)")
+print("  Powered by yfinance + Groq (Llama 3.3) + RAG")
 print("="*55)
 
 print("\nEnter NSE stock tickers one by one.")
@@ -239,7 +258,7 @@ for ticker in tickers:
 
         if stop_flag.is_set(): raise InterruptedError
         print("  Fetching news & generating AI brief...")
-        brief = generate_stock_brief(data, signals, ticker)
+        brief = generate_stock_brief(data, signals, ticker, vectorstore)
 
         if stop_flag.is_set(): raise InterruptedError
         print_stock_brief(brief, history)
@@ -268,7 +287,6 @@ stop_flag.set()
 if len(all_stock_data) > 1:
     print_comparison_table(all_stock_data)
 
-# print glossary once after all stocks
 print_glossary()
 
 if len(all_stock_data) >= 1:
