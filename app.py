@@ -77,7 +77,7 @@ vectorstore = load_vectorstore()
 # ── HEADER ────────────────────────────────
 
 st.title("📈 Stock Research AI")
-st.markdown("*AI-powered equity research for Indian retail investors — powered by yfinance, Groq & RAG*")
+st.markdown("*AI-powered equity research for retail investors — powered by yfinance, Groq & RAG*")
 st.divider()
 
 # ── SIDEBAR ───────────────────────────────
@@ -87,30 +87,21 @@ with st.sidebar:
     ticker = st.text_input(
         "Enter Stock Ticker",
         placeholder="e.g. RELIANCE.NS",
-        help="Enter any NSE stock ticker ending with .NS"
+        help="Enter any stock ticker"
     ).strip().upper()
 
     analyse_btn = st.button("🚀 Analyse Stock", use_container_width=True, type="primary")
 
     st.divider()
-    st.header("💬 Ask Annual Report")
-    question = st.text_area(
-        "Your question",
-        placeholder="e.g. What is the green energy strategy?",
-        height=100
-    )
-    ask_btn = st.button("🔎 Ask", use_container_width=True)
-
-    st.divider()
     st.markdown("**Supported formats:**")
-    st.markdown("NSE: RELIANCE.NS · TCS.NS · INFY.NS")
-    st.markdown("BSE: WIPRO.BO · ZOMATO.BO")
-    st.markdown("US: TSLA · MSFT · NVDA")
+    st.markdown("NSE: `RELIANCE.NS` · `TCS.NS` · `INFY.NS`")
+    st.markdown("BSE: `WIPRO.BO` · `ZOMATO.BO`")
+    st.markdown("US: `TSLA` · `MSFT` · `NVDA`")
 
     if vectorstore:
         st.success("✅ Annual report loaded")
     else:
-        st.warning("⚠️ Annual report not loaded")
+        st.warning("⚠️ Annual report not available")
 
 # ── MAIN CONTENT ──────────────────────────
 
@@ -122,12 +113,10 @@ if analyse_btn and ticker:
             from src.signals import basic_signal
             from src.llm import generate_stock_brief
 
-            # Fetch data
             data    = clean_data(get_stock_data(ticker))
             signals = basic_signal(data)
             history = analyse_history(ticker)
 
-            # Fetch price history for chart
             stock      = yf.Ticker(ticker)
             price_hist = stock.history(period="1y")
             price_data = {
@@ -135,7 +124,6 @@ if analyse_btn and ticker:
                 "closes": price_hist["Close"].round(2).tolist(),
             }
 
-            # Generate AI brief
             brief = generate_stock_brief(data, signals, ticker, vectorstore)
 
             # ── COMPANY HEADER ────────────────────
@@ -147,7 +135,7 @@ if analyse_btn and ticker:
             with col2:
                 price = brief['key_metrics'].get('price', 'N/A')
                 ret   = brief['key_metrics'].get('one_year_return', 'N/A')
-                st.metric("Current Stock Price (Live)", price, ret)
+                st.metric("Current Price (Live)", price, ret)
 
             st.divider()
 
@@ -165,7 +153,7 @@ if analyse_btn and ticker:
             c5.metric("Debt/Equity",    m.get('debt_to_equity', 'N/A'))
             c6.metric("Revenue Growth", m.get('revenue_growth', 'N/A'))
             c7.metric("1Y Return",      m.get('one_year_return', 'N/A'))
-            c8.metric("Signals",        signals[0] if signals else "N/A")
+            c8.metric("Top Signal",     signals[0][:30] if signals else "N/A")
 
             st.divider()
 
@@ -258,40 +246,42 @@ if analyse_btn and ticker:
             st.markdown(f'<div class="news-box">{brief.get("news_context", "No recent news available.")}</div>', unsafe_allow_html=True)
 
             # ── ANNUAL REPORT INSIGHTS ────────────
+            # Only show if vectorstore is loaded for this specific company
+            # Removed Q&A chatbox — will be added properly in Week 2 RAG phase
+            # with dynamic per-company PDF loading
 
-            st.markdown('<div class="section-header">📋 Annual Report Insights</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="rag-box">{brief.get("annual_report_insights", "Annual report not available for this stock.")}</div>', unsafe_allow_html=True)
+            st.divider()
 
         except Exception as e:
             st.error(f"Error: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
 
 elif analyse_btn and not ticker:
     st.warning("Please enter a stock ticker first.")
 
-# ── ASK ANNUAL REPORT ─────────────────────
+else:
+    # ── LANDING STATE ─────────────────────
+    st.markdown("### How to use")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.info("**Step 1**\nEnter a stock ticker in the sidebar")
+    with col2:
+        st.info("**Step 2**\nClick Analyse and wait for results")
+    with col3:
+        st.info("**Step 3**\nRead the AI brief, chart, news and metrics")
 
-if ask_btn and question:
-    if vectorstore is None:
-        st.error("Annual report index not loaded. Cannot answer questions.")
-    else:
-        with st.spinner("Searching annual report..."):
-            try:
-                from src.rag import ask_annual_report
-                answer = ask_annual_report(question, vectorstore)
-                st.markdown('<div class="section-header">💬 Answer from Annual Report</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="rag-box">{answer}</div>', unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
-
-elif ask_btn and not question:
-    st.warning("Please enter a question first.")
+    st.divider()
+    st.markdown("### Example tickers to try")
+    st.code("RELIANCE.NS\nINFY.NS\nHDFCBANK.NS\nTSLA\nNVDA")
+    st.markdown("*Built by Anshika Singh — Electronics Engineering, Banasthali Vidyapith*")
 
 # ── FOOTER ────────────────────────────────
 
 st.divider()
 st.markdown(
     "<center><small>Stock Research AI — by Anshika Singh | "
-    "Powered by yfinance + Groq (Llama 3.3) + RAG | "
+    "Powered by yfinance + Groq (Llama 3.3) | "
     "Not financial advice</small></center>",
     unsafe_allow_html=True
 )
