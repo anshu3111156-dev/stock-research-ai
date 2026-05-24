@@ -147,7 +147,7 @@ if analyse_btn and ticker:
             with col2:
                 price = brief['key_metrics'].get('price', 'N/A')
                 ret   = brief['key_metrics'].get('one_year_return', 'N/A')
-                st.metric("Current Price (Live)", price, ret)
+                st.metric("Current Stock Price (Live)", price, ret)
 
             st.divider()
 
