@@ -1,8 +1,9 @@
+import os
 import streamlit as st
-import requests
 import plotly.graph_objects as go
+from dotenv import load_dotenv
 
-API_URL = "http://127.0.0.1:8000"
+load_dotenv()
 
 # ── PAGE CONFIG ───────────────────────────
 
@@ -16,14 +17,6 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    .main { background-color: #0e1117; }
-    .metric-card {
-        background: #1e2130;
-        border-radius: 10px;
-        padding: 15px;
-        margin: 5px;
-        border-left: 4px solid #00d4aa;
-    }
     .section-header {
         color: #00d4aa;
         font-size: 18px;
@@ -65,6 +58,22 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ── LOAD RAG VECTORSTORE ONCE ─────────────
+
+@st.cache_resource
+def load_vectorstore():
+    FAISS_INDEX_PATH = "data/faiss_index"
+    if os.path.exists(FAISS_INDEX_PATH):
+        try:
+            from src.rag import load_faiss_index
+            return load_faiss_index()
+        except Exception as e:
+            st.warning(f"Could not load annual report index: {e}")
+            return None
+    return None
+
+vectorstore = load_vectorstore()
+
 # ── HEADER ────────────────────────────────
 
 st.title("📈 Stock Research AI")
@@ -76,7 +85,7 @@ st.divider()
 with st.sidebar:
     st.header("🔍 Search Stock")
     ticker = st.text_input(
-        "Enter NSE Ticker",
+        "Enter Stock Ticker",
         placeholder="e.g. RELIANCE.NS",
         help="Enter any NSE stock ticker ending with .NS"
     ).strip().upper()
@@ -94,161 +103,165 @@ with st.sidebar:
 
     st.divider()
     st.markdown("**Supported formats:**")
-    st.markdown("RELIANCE.NS · TCS.NS · INFY.NS")
-    st.markdown("HDFCBANK.NS · WIPRO.NS · SBIN.NS")
+    st.markdown("NSE: RELIANCE.NS · TCS.NS · INFY.NS")
+    st.markdown("BSE: WIPRO.BO · ZOMATO.BO")
+    st.markdown("US: TSLA · MSFT · NVDA")
+
+    if vectorstore:
+        st.success("✅ Annual report loaded")
+    else:
+        st.warning("⚠️ Annual report not loaded")
 
 # ── MAIN CONTENT ──────────────────────────
 
 if analyse_btn and ticker:
     with st.spinner(f"Fetching data and generating AI brief for {ticker}..."):
         try:
-            response = requests.post(
-                f"{API_URL}/research",
-                json={"ticker": ticker},
-                timeout=120
-            )
+            import yfinance as yf
+            from src.data import get_stock_data, clean_data, analyse_history
+            from src.signals import basic_signal
+            from src.llm import generate_stock_brief
 
-            if response.status_code == 200:
-                result     = response.json()
-                brief      = result["brief"]
-                history    = result["history"]
-                signals    = result["signals"]
-                price_data = result.get("price_data", {})
+            # Fetch data
+            data    = clean_data(get_stock_data(ticker))
+            signals = basic_signal(data)
+            history = analyse_history(ticker)
 
-                # ── COMPANY HEADER ────────────────────
+            # Fetch price history for chart
+            stock      = yf.Ticker(ticker)
+            price_hist = stock.history(period="1y")
+            price_data = {
+                "dates":  price_hist.index.strftime("%Y-%m-%d").tolist(),
+                "closes": price_hist["Close"].round(2).tolist(),
+            }
 
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.header(f"🏢 {brief['company_name']}")
-                    st.markdown(f"**Sector:** {brief['sector']}")
-                with col2:
-                    price = brief['key_metrics'].get('price', 'N/A')
-                    ret   = brief['key_metrics'].get('one_year_return', 'N/A')
-                    st.metric("Current Price", price, ret)
+            # Generate AI brief
+            brief = generate_stock_brief(data, signals, ticker, vectorstore)
 
-                st.divider()
+            # ── COMPANY HEADER ────────────────────
 
-                # ── KEY METRICS ───────────────────────
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.header(f"🏢 {brief['company_name']}")
+                st.markdown(f"**Sector:** {brief['sector']}")
+            with col2:
+                price = brief['key_metrics'].get('price', 'N/A')
+                ret   = brief['key_metrics'].get('one_year_return', 'N/A')
+                st.metric("Current Price", price, ret)
 
-                st.markdown('<div class="section-header">📊 Key Metrics</div>', unsafe_allow_html=True)
-                m = brief['key_metrics']
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("P/E Ratio",      m.get('pe_ratio', 'N/A'))
-                c2.metric("P/B Ratio",      m.get('pb_ratio', 'N/A'))
-                c3.metric("Profit Margin",  m.get('profit_margin', 'N/A'))
-                c4.metric("ROE",            m.get('roe', 'N/A'))
+            st.divider()
 
-                c5, c6, c7, c8 = st.columns(4)
-                c5.metric("Debt/Equity",    m.get('debt_to_equity', 'N/A'))
-                c6.metric("Revenue Growth", m.get('revenue_growth', 'N/A'))
-                c7.metric("1Y Return",      m.get('one_year_return', 'N/A'))
-                c8.metric("Signals",        signals[0] if signals else "N/A")
+            # ── KEY METRICS ───────────────────────
 
-                st.divider()
+            st.markdown('<div class="section-header">📊 Key Metrics</div>', unsafe_allow_html=True)
+            m = brief['key_metrics']
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("P/E Ratio",      m.get('pe_ratio', 'N/A'))
+            c2.metric("P/B Ratio",      m.get('pb_ratio', 'N/A'))
+            c3.metric("Profit Margin",  m.get('profit_margin', 'N/A'))
+            c4.metric("ROE",            m.get('roe', 'N/A'))
 
-                # ── PRICE CHART ───────────────────────
+            c5, c6, c7, c8 = st.columns(4)
+            c5.metric("Debt/Equity",    m.get('debt_to_equity', 'N/A'))
+            c6.metric("Revenue Growth", m.get('revenue_growth', 'N/A'))
+            c7.metric("1Y Return",      m.get('one_year_return', 'N/A'))
+            c8.metric("Signals",        signals[0] if signals else "N/A")
 
-                if price_data and price_data.get("dates"):
-                    st.markdown('<div class="section-header">📉 Price History — 1 Year</div>', unsafe_allow_html=True)
+            st.divider()
 
-                    fig = go.Figure()
+            # ── PRICE CHART ───────────────────────
 
-                    # Real price line
-                    fig.add_trace(go.Scatter(
-                        x=price_data["dates"],
-                        y=price_data["closes"],
-                        mode="lines",
-                        name="Price",
-                        line=dict(color="#00d4aa", width=2),
-                        fill="tozeroy",
-                        fillcolor="rgba(0, 212, 170, 0.05)"
-                    ))
+            if price_data and price_data.get("dates"):
+                st.markdown('<div class="section-header">📉 Price History — 1 Year</div>', unsafe_allow_html=True)
 
-                    # MA lines
-                    if history:
-                        fig.add_hline(
-                            y=history['ma50'],
-                            line_color="#ffa500",
-                            line_dash="dash",
-                            annotation_text=f"MA50 ₹{history['ma50']:,.0f}",
-                            annotation_font_color="#ffa500"
-                        )
-                        fig.add_hline(
-                            y=history['ma200'],
-                            line_color="#ff4b4b",
-                            line_dash="dash",
-                            annotation_text=f"MA200 ₹{history['ma200']:,.0f}",
-                            annotation_font_color="#ff4b4b"
-                        )
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=price_data["dates"],
+                    y=price_data["closes"],
+                    mode="lines",
+                    name="Price",
+                    line=dict(color="#00d4aa", width=2),
+                    fill="tozeroy",
+                    fillcolor="rgba(0, 212, 170, 0.05)"
+                ))
 
-                    fig.update_layout(
-                        paper_bgcolor="#0e1117",
-                        plot_bgcolor="#1e2130",
-                        font_color="white",
-                        height=400,
-                        margin=dict(l=20, r=20, t=20, b=20),
-                        xaxis=dict(gridcolor="#2d3250", showgrid=True),
-                        yaxis=dict(gridcolor="#2d3250", showgrid=True, tickprefix="₹"),
-                        legend=dict(bgcolor="#1e2130"),
-                        hovermode="x unified"
+                if history:
+                    fig.add_hline(
+                        y=history['ma50'],
+                        line_color="#ffa500",
+                        line_dash="dash",
+                        annotation_text=f"MA50 ₹{history['ma50']:,.0f}",
+                        annotation_font_color="#ffa500"
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    fig.add_hline(
+                        y=history['ma200'],
+                        line_color="#ff4b4b",
+                        line_dash="dash",
+                        annotation_text=f"MA200 ₹{history['ma200']:,.0f}",
+                        annotation_font_color="#ff4b4b"
+                    )
 
-                    # 52W stats below chart
-                    if history:
-                        h1, h2, h3, h4 = st.columns(4)
-                        h1.metric("52W High",   f"₹{history['high_52w']:,.2f}")
-                        h2.metric("52W Low",    f"₹{history['low_52w']:,.2f}")
-                        h3.metric("Avg Price",  f"₹{history['avg_price']:,.2f}")
-                        h4.metric("Volatility", f"{history['volatility']}% daily")
+                fig.update_layout(
+                    paper_bgcolor="#0e1117",
+                    plot_bgcolor="#1e2130",
+                    font_color="white",
+                    height=400,
+                    margin=dict(l=20, r=20, t=20, b=20),
+                    xaxis=dict(gridcolor="#2d3250", showgrid=True),
+                    yaxis=dict(gridcolor="#2d3250", showgrid=True, tickprefix="₹"),
+                    hovermode="x unified"
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
-                st.divider()
+                if history:
+                    h1, h2, h3, h4 = st.columns(4)
+                    h1.metric("52W High",   f"₹{history['high_52w']:,.2f}")
+                    h2.metric("52W Low",    f"₹{history['low_52w']:,.2f}")
+                    h3.metric("Avg Price",  f"₹{history['avg_price']:,.2f}")
+                    h4.metric("Volatility", f"{history['volatility']}% daily")
 
-                # ── TWO COLUMN LAYOUT ─────────────────
+            st.divider()
 
-                left, right = st.columns(2)
+            # ── TWO COLUMN LAYOUT ─────────────────
 
-                with left:
-                    st.markdown('<div class="section-header">📌 Analyst Summary</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="insight-box">{brief["analyst_summary"]}</div>', unsafe_allow_html=True)
+            left, right = st.columns(2)
 
-                    st.markdown('<div class="section-header">💰 Valuation</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="insight-box">{brief["valuation_commentary"]}</div>', unsafe_allow_html=True)
+            with left:
+                st.markdown('<div class="section-header">📌 Analyst Summary</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-box">{brief["analyst_summary"]}</div>', unsafe_allow_html=True)
 
-                    st.markdown('<div class="section-header">📈 Growth Outlook</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="insight-box">{brief["growth_outlook"]}</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-header">💰 Valuation</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-box">{brief["valuation_commentary"]}</div>', unsafe_allow_html=True)
 
-                    st.markdown('<div class="section-header">⚠️ Risk Flags</div>', unsafe_allow_html=True)
-                    risks_html = "".join([f'<span class="risk-tag">⚠ {r}</span>' for r in brief.get('risk_flags', [])])
-                    st.markdown(f'<div class="insight-box">{risks_html}</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-header">📈 Growth Outlook</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-box">{brief["growth_outlook"]}</div>', unsafe_allow_html=True)
 
-                with right:
-                    st.markdown('<div class="section-header">💪 Financial Health</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="insight-box">{brief["financial_health"]}</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-header">⚠️ Risk Flags</div>', unsafe_allow_html=True)
+                risks_html = "".join([f'<span class="risk-tag">⚠ {r}</span>' for r in brief.get('risk_flags', [])])
+                st.markdown(f'<div class="insight-box">{risks_html}</div>', unsafe_allow_html=True)
 
-                    st.markdown('<div class="section-header">👤 Investor Profile</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="insight-box">{brief["investor_profile"]}</div>', unsafe_allow_html=True)
+            with right:
+                st.markdown('<div class="section-header">💪 Financial Health</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-box">{brief["financial_health"]}</div>', unsafe_allow_html=True)
 
-                    st.markdown('<div class="section-header">🔍 Watch Out For</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="insight-box">{brief["watch_out_for"]}</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-header">👤 Investor Profile</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-box">{brief["investor_profile"]}</div>', unsafe_allow_html=True)
 
-                st.divider()
+                st.markdown('<div class="section-header">🔍 Watch Out For</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-box">{brief["watch_out_for"]}</div>', unsafe_allow_html=True)
 
-                # ── NEWS CONTEXT ──────────────────────
+            st.divider()
 
-                st.markdown('<div class="section-header">📰 News Context</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="news-box">{brief.get("news_context", "No recent news available.")}</div>', unsafe_allow_html=True)
+            # ── NEWS CONTEXT ──────────────────────
 
-                # ── ANNUAL REPORT INSIGHTS ────────────
+            st.markdown('<div class="section-header">📰 News Context</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="news-box">{brief.get("news_context", "No recent news available.")}</div>', unsafe_allow_html=True)
 
-                st.markdown('<div class="section-header">📋 Annual Report Insights</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="rag-box">{brief.get("annual_report_insights", "Annual report not available for this stock.")}</div>', unsafe_allow_html=True)
+            # ── ANNUAL REPORT INSIGHTS ────────────
 
-            else:
-                st.error(f"API Error: {response.json().get('detail', 'Unknown error')}")
+            st.markdown('<div class="section-header">📋 Annual Report Insights</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="rag-box">{brief.get("annual_report_insights", "Annual report not available for this stock.")}</div>', unsafe_allow_html=True)
 
-        except requests.exceptions.ConnectionError:
-            st.error("Cannot connect to API. Make sure the FastAPI server is running: `python -m uvicorn api:app --reload`")
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
@@ -258,21 +271,17 @@ elif analyse_btn and not ticker:
 # ── ASK ANNUAL REPORT ─────────────────────
 
 if ask_btn and question:
-    with st.spinner("Searching annual report..."):
-        try:
-            response = requests.post(
-                f"{API_URL}/ask",
-                json={"question": question},
-                timeout=60
-            )
-            if response.status_code == 200:
-                answer = response.json().get("answer", "No answer found.")
+    if vectorstore is None:
+        st.error("Annual report index not loaded. Cannot answer questions.")
+    else:
+        with st.spinner("Searching annual report..."):
+            try:
+                from src.rag import ask_annual_report
+                answer = ask_annual_report(question, vectorstore)
                 st.markdown('<div class="section-header">💬 Answer from Annual Report</div>', unsafe_allow_html=True)
                 st.markdown(f'<div class="rag-box">{answer}</div>', unsafe_allow_html=True)
-            else:
-                st.error(f"Error: {response.json().get('detail', 'Unknown error')}")
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
 
 elif ask_btn and not question:
     st.warning("Please enter a question first.")
