@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import streamlit as st
 import plotly.graph_objects as go
 from dotenv import load_dotenv
@@ -12,124 +13,365 @@ try:
         if key in st.secrets:
             os.environ[key] = st.secrets[key]
 except Exception:
-    pass  # running locally — keys loaded from .env instead
+    pass
 
 # ── PAGE CONFIG ───────────────────────────
 
 st.set_page_config(
     page_title="Stock Research AI",
     page_icon="📈",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 # ── CUSTOM CSS ────────────────────────────
 
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { font-family: 'Inter', sans-serif; }
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    [data-testid="stSidebar"] {display: none;}
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+    .stApp {
+        background-color: #0f0f0f;
+        color: #ffffff;
     }
 
-    .section-header {
-        color: #00d4aa;
-        font-size: 15px;
+    /* ── NAVBAR ── */
+    .navbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 32px;
+        background: #0f0f0f;
+        border-bottom: 1px solid #1e1e1e;
+        margin-bottom: 0px;
+    }
+    .navbar-logo {
+        font-size: 20px;
         font-weight: 700;
-        margin-top: 24px;
+        color: #00d4aa;
+        letter-spacing: -0.5px;
+    }
+    .navbar-tag {
+        font-size: 11px;
+        color: #555;
+        margin-top: 2px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+        text-align: center;
+        padding: 60px 20px 40px 20px;
+    }
+    .hero-title {
+        font-size: 48px;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: -1px;
+        margin-bottom: 12px;
+        line-height: 1.1;
+    }
+    .hero-title span {
+        color: #00d4aa;
+    }
+    .hero-subtitle {
+        font-size: 16px;
+        color: #888;
+        margin-bottom: 40px;
+    }
+
+    /* ── SEARCH ── */
+    .search-container {
+        max-width: 600px;
+        margin: 0 auto;
+        position: relative;
+    }
+    .stTextInput input {
+        background: #1a1a1a !important;
+        border: 1px solid #2a2a2a !important;
+        border-radius: 12px !important;
+        color: #ffffff !important;
+        font-size: 16px !important;
+        padding: 16px 20px !important;
+        height: 56px !important;
+    }
+    .stTextInput input:focus {
+        border-color: #00d4aa !important;
+        box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.1) !important;
+    }
+    .stTextInput input::placeholder {
+        color: #555 !important;
+    }
+
+    /* ── KNOWLEDGE CARDS ── */
+    .level-card {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin: 8px 0;
+    }
+    .level-card:hover {
+        border-color: #00d4aa;
+        background: #1e2a28;
+    }
+    .level-card.selected {
+        border-color: #00d4aa;
+        background: #0d2420;
+    }
+    .level-icon {
+        font-size: 32px;
         margin-bottom: 8px;
+    }
+    .level-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 4px;
+    }
+    .level-desc {
+        font-size: 12px;
+        color: #666;
+    }
+
+    /* ── METRIC CARDS ── */
+    .metric-card {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 6px 0;
+    }
+    .metric-label {
+        font-size: 11px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+    .metric-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ffffff;
+    }
+    .metric-value.positive { color: #00d4aa; }
+    .metric-value.negative { color: #ff4b4b; }
+
+    /* ── SECTION CARDS ── */
+    .section-card {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        padding: 24px;
+        margin: 8px 0;
+    }
+    .section-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #00d4aa;
         text-transform: uppercase;
         letter-spacing: 1px;
+        margin-bottom: 12px;
     }
-    .insight-box {
-        background: #1e2130;
-        border-radius: 10px;
-        padding: 20px;
-        margin: 10px 0;
-        border: 1px solid #2d3250;
-        line-height: 1.6;
+    .section-text {
+        font-size: 14px;
+        color: #cccccc;
+        line-height: 1.7;
     }
+
+    /* ── RISK TAGS ── */
     .risk-tag {
-        background: #ff4b4b22;
-        border: 1px solid #ff4b4b;
-        border-radius: 5px;
-        padding: 5px 10px;
-        margin: 3px;
+        background: rgba(255,75,75,0.1);
+        border: 1px solid rgba(255,75,75,0.3);
+        border-radius: 6px;
+        padding: 6px 12px;
+        margin: 4px;
         display: inline-block;
         color: #ff4b4b;
-        font-size: 14px;
-    }
-    .news-box {
-        background: #1a1f35;
-        border-radius: 8px;
-        padding: 15px;
-        border-left: 4px solid #ffa500;
-        margin: 10px 0;
-        line-height: 1.6;
-    }
-    .rag-box {
-        background: #1a1f35;
-        border-radius: 8px;
-        padding: 15px;
-        border-left: 4px solid #7c3aed;
-        margin: 10px 0;
-        line-height: 1.6;
+        font-size: 12px;
     }
     .signal-good {
-        background: #00d4aa22;
-        border: 1px solid #00d4aa;
-        border-radius: 5px;
-        padding: 5px 10px;
-        margin: 3px;
+        background: rgba(0,212,170,0.1);
+        border: 1px solid rgba(0,212,170,0.3);
+        border-radius: 6px;
+        padding: 6px 12px;
+        margin: 4px;
         display: inline-block;
         color: #00d4aa;
-        font-size: 13px;
+        font-size: 12px;
     }
     .signal-warn {
-        background: #ffa50022;
-        border: 1px solid #ffa500;
-        border-radius: 5px;
-        padding: 5px 10px;
-        margin: 3px;
+        background: rgba(255,165,0,0.1);
+        border: 1px solid rgba(255,165,0,0.3);
+        border-radius: 6px;
+        padding: 6px 12px;
+        margin: 4px;
         display: inline-block;
         color: #ffa500;
-        font-size: 13px;
+        font-size: 12px;
     }
-    .signal-bad {
-        background: #ff4b4b22;
-        border: 1px solid #ff4b4b;
-        border-radius: 5px;
-        padding: 5px 10px;
-        margin: 3px;
-        display: inline-block;
-        color: #ff4b4b;
-        font-size: 13px;
+
+    /* ── NEWS BOX ── */
+    .news-card {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-left: 3px solid #ffa500;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 8px 0;
     }
-    [data-testid="metric-container"] {
-        background: #1e2130;
-        border: 1px solid #2d3250;
-        border-radius: 10px;
-        padding: 15px;
+
+    /* ── RAG BOX ── */
+    .rag-card {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-left: 3px solid #7c3aed;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 8px 0;
     }
-    .stButton button {
-        background: #00d4aa;
-        color: #0e1117;
+
+    /* ── DIVIDER ── */
+    .custom-divider {
         border: none;
-        border-radius: 8px;
-        font-weight: bold;
+        border-top: 1px solid #1e1e1e;
+        margin: 24px 0;
+    }
+
+    /* ── BUTTONS ── */
+    .stButton button {
+        background: #00d4aa !important;
+        color: #0f0f0f !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        padding: 10px 24px !important;
+        transition: all 0.2s ease !important;
     }
     .stButton button:hover {
-        background: #00b894;
-        color: white;
+        background: #00b894 !important;
+        transform: translateY(-1px) !important;
     }
+
+    /* ── SUGGESTION LIST ── */
+    .suggestion-item {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 10px 16px;
+        margin: 4px 0;
+        cursor: pointer;
+        font-size: 14px;
+        color: #cccccc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .suggestion-ticker {
+        color: #00d4aa;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* ── COMPANY HEADER ── */
+    .company-header {
+        background: linear-gradient(135deg, #1a1a1a 0%, #1e2a28 100%);
+        border: 1px solid #2a2a2a;
+        border-radius: 16px;
+        padding: 28px;
+        margin: 16px 0;
+    }
+    .company-name {
+        font-size: 28px;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 4px;
+    }
+    .company-meta {
+        font-size: 13px;
+        color: #666;
+    }
+    .price-display {
+        font-size: 36px;
+        font-weight: 700;
+        color: #ffffff;
+    }
+    .price-change-pos {
+        font-size: 16px;
+        color: #00d4aa;
+        font-weight: 600;
+    }
+    .price-change-neg {
+        font-size: 16px;
+        color: #ff4b4b;
+        font-weight: 600;
+    }
+
+    /* ── GLOSSARY BOX ── */
+    .glossary-term {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        padding: 16px;
+        margin: 6px 0;
+    }
+    .glossary-word {
+        font-size: 14px;
+        font-weight: 600;
+        color: #00d4aa;
+        margin-bottom: 4px;
+    }
+    .glossary-def {
+        font-size: 13px;
+        color: #999;
+        line-height: 1.5;
+    }
+
+    /* ── LEVEL BADGE ── */
+    .level-badge {
+        display: inline-block;
+        background: rgba(0,212,170,0.1);
+        border: 1px solid rgba(0,212,170,0.3);
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 12px;
+        color: #00d4aa;
+        font-weight: 600;
+    }
+
+    /* ── SPINNER OVERRIDE ── */
+    .stSpinner > div {
+        border-top-color: #00d4aa !important;
+    }
+
+    /* ── SELECTBOX ── */
+    .stSelectbox select {
+        background: #1a1a1a !important;
+        color: #ffffff !important;
+        border: 1px solid #2a2a2a !important;
+        border-radius: 8px !important;
+    }
+
+    /* hide streamlit elements */
+    .stDeployButton {display: none;}
+    div[data-testid="stDecoration"] {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
-# ── COMPANY LIST ──────────────────────────
+# ── COMPANY DATABASE ──────────────────────
 
-NSE_COMPANIES = {
+ALL_COMPANIES = {
+    # NSE India
     "Reliance Industries": "RELIANCE.NS",
     "Tata Consultancy Services": "TCS.NS",
     "Infosys": "INFY.NS",
@@ -176,9 +418,9 @@ NSE_COMPANIES = {
     "Tata Consumer Products": "TATACONSUM.NS",
     "Pidilite Industries": "PIDILITIND.NS",
     "Havells India": "HAVELLS.NS",
-}
-
-BSE_COMPANIES = {
+    "Voltas": "VOLTAS.NS",
+    "Grasim Industries": "GRASIM.NS",
+    # BSE
     "Tata Power": "TATAPOWER.BO",
     "Suzlon Energy": "SUZLON.BO",
     "YES Bank": "YESBANK.BO",
@@ -187,11 +429,8 @@ BSE_COMPANIES = {
     "SAIL": "SAIL.BO",
     "Bank of Baroda": "BANKBARODA.BO",
     "PNB": "PNB.BO",
-    "Union Bank": "UNIONBANK.BO",
     "IDFC First Bank": "IDFCFIRSTB.BO",
-}
-
-NYSE_COMPANIES = {
+    # NYSE / NASDAQ
     "Apple": "AAPL",
     "Microsoft": "MSFT",
     "Amazon": "AMZN",
@@ -213,7 +452,6 @@ NYSE_COMPANIES = {
     "Coca Cola": "KO",
     "Nike": "NKE",
     "McDonald's": "MCD",
-    "IBM": "IBM",
     "AMD": "AMD",
     "Salesforce": "CRM",
     "Adobe": "ADBE",
@@ -222,16 +460,69 @@ NYSE_COMPANIES = {
     "Airbnb": "ABNB",
     "Palantir": "PLTR",
     "Berkshire Hathaway": "BRK-B",
+    "Intel": "INTC",
+    "Spotify": "SPOT",
+    "Snowflake": "SNOW",
 }
 
-ALL_COMPANIES = {**NSE_COMPANIES, **BSE_COMPANIES, **NYSE_COMPANIES}
+KNOWLEDGE_LEVELS = {
+    "🌱 Beginner": {
+        "desc": "New to investing",
+        "detail": "Never invested before or just getting started",
+        "style": "Explain every term. Use very simple language. No jargon at all."
+    },
+    "📈 Learner": {
+        "desc": "Know the basics",
+        "detail": "Understand what stocks are, learning more",
+        "style": "Use simple language. Explain complex terms briefly."
+    },
+    "💼 Intermediate": {
+        "desc": "Invest regularly",
+        "detail": "Comfortable with P/E, ROE, basic analysis",
+        "style": "Use standard financial language. Focus on insights over definitions."
+    },
+    "🏦 Expert": {
+        "desc": "Professional or experienced",
+        "detail": "Deep market knowledge, technical analysis",
+        "style": "Use professional financial language. Provide technical depth. Skip basic explanations."
+    },
+}
+
+GLOSSARY = {
+    "P/E Ratio": "Price to Earnings — how much you pay for every ₹1 of profit. Lower = potentially cheaper.",
+    "P/B Ratio": "Price to Book — compares price to net assets. Below 1 means trading cheaper than assets.",
+    "EPS": "Earnings Per Share — profit per single share. Higher is better.",
+    "ROE": "Return on Equity — how well company uses your money to generate profit. Above 15% is good.",
+    "Debt to Equity": "How much debt vs shareholder funds. Very high = more financial risk.",
+    "Profit Margin": "% of revenue that becomes profit. Higher = more efficient business.",
+    "Revenue Growth": "How much sales grew vs last year. Above 10% is healthy.",
+    "Market Cap": "Total market value. Large cap >₹20,000 Cr, mid cap ₹5,000-20,000 Cr.",
+    "52 Week High": "Highest price in the last year.",
+    "52 Week Low": "Lowest price in the last year.",
+    "Moving Average": "Average price over a period. MA50 = last 50 days. Price above MA200 = positive trend.",
+    "Volatility": "How much price moves daily. Higher = more risk and potential reward.",
+    "Dividend Yield": "Annual dividend as % of stock price. Income for investors.",
+    "Bull Market": "Rising market where prices are going up.",
+    "Bear Market": "Falling market where prices are going down.",
+    "SEBI": "Securities and Exchange Board of India — regulates Indian stock markets.",
+    "NSE": "National Stock Exchange — India's largest stock exchange.",
+    "BSE": "Bombay Stock Exchange — oldest stock exchange in Asia.",
+    "NASDAQ": "US tech-heavy stock exchange. Home to Apple, Microsoft, NVIDIA.",
+    "NYSE": "New York Stock Exchange — largest stock exchange in the world.",
+}
 
 # ── SESSION STATE ─────────────────────────
 
+if 'knowledge_level' not in st.session_state:
+    st.session_state.knowledge_level = None
 if 'request_count' not in st.session_state:
     st.session_state.request_count = 0
+if 'selected_ticker' not in st.session_state:
+    st.session_state.selected_ticker = ""
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = "home"
 
-# ── LOAD RAG VECTORSTORE ──────────────────
+# ── LOAD RESOURCES ────────────────────────
 
 @st.cache_resource
 def load_vectorstore():
@@ -244,329 +535,510 @@ def load_vectorstore():
             return None
     return None
 
-vectorstore = load_vectorstore()
-
-# ── CACHE STOCK DATA ──────────────────────
-
 @st.cache_data(ttl=300)
 def cached_stock_data(ticker):
     from src.data import get_stock_data, clean_data
     return clean_data(get_stock_data(ticker))
 
-# ── INPUT SANITISER ───────────────────────
-
 def sanitise_ticker(ticker):
-    cleaned = re.sub(r'[^A-Z0-9.\-&]', '', ticker.upper())
-    return cleaned[:20]
+    return re.sub(r'[^A-Z0-9.\-&]', '', ticker.upper())[:20]
 
-# ── HEADER ────────────────────────────────
+vectorstore = load_vectorstore()
 
-st.title("📈 Stock Research AI")
-st.markdown("*AI-powered equity research for retail investors — powered by yfinance, Groq & RAG*")
-st.divider()
+# ── NAVBAR ────────────────────────────────
 
-# ── SIDEBAR ───────────────────────────────
+st.markdown("""
+<div class="navbar">
+    <div>
+        <div class="navbar-logo">📈 StockAI</div>
+        <div class="navbar-tag">Powered by Groq · yfinance · RAG</div>
+    </div>
+    <div style="color:#555; font-size:12px;">Not financial advice</div>
+</div>
+""", unsafe_allow_html=True)
 
-with st.sidebar:
+# ══════════════════════════════════════════
+# PAGE 1 — KNOWLEDGE LEVEL SELECTOR
+# ══════════════════════════════════════════
 
-    # language toggle
-    lang = st.radio(
-        "भाषा / Language",
-        ["English", "हिंदी"],
-        horizontal=True
-    )
+if st.session_state.knowledge_level is None:
 
-    st.divider()
-    st.header("🔍 Search Stock")
+    st.markdown("""
+    <div class="hero">
+        <div class="hero-title">Research any stock.<br><span>Understand it instantly.</span></div>
+        <div class="hero-subtitle">AI-powered equity research for every type of investor</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # exchange selector
-    exchange = st.selectbox(
-        "Exchange",
-        ["All Exchanges", "NSE India", "BSE India", "NYSE / NASDAQ"]
-    )
+    st.markdown("<div style='text-align:center; color:#888; font-size:14px; margin-bottom:24px;'>First, tell us about your investing experience</div>", unsafe_allow_html=True)
 
-    # filter company list by exchange
-    if exchange == "NSE India":
-        company_list = sorted(NSE_COMPANIES.keys())
-    elif exchange == "BSE India":
-        company_list = sorted(BSE_COMPANIES.keys())
-    elif exchange == "NYSE / NASDAQ":
-        company_list = sorted(NYSE_COMPANIES.keys())
-    else:
-        company_list = sorted(ALL_COMPANIES.keys())
+    col1, col2, col3, col4 = st.columns(4)
 
-    # company dropdown
-    selected_company = st.selectbox(
-        "Select Company",
-        [""] + company_list,
-        format_func=lambda x: "Choose a company..." if x == "" else x
-    )
+    for col, (level, info) in zip(
+        [col1, col2, col3, col4],
+        KNOWLEDGE_LEVELS.items()
+    ):
+        with col:
+            st.markdown(f"""
+            <div class="level-card">
+                <div class="level-icon">{level.split()[0]}</div>
+                <div class="level-title">{level.split(' ', 1)[1]}</div>
+                <div class="level-desc">{info['detail']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button(f"Select", key=f"level_{level}", use_container_width=True):
+                st.session_state.knowledge_level = level
+                st.rerun()
 
-    # manual ticker fallback
-    manual_ticker = st.text_input(
-        "Or enter ticker manually",
-        placeholder="e.g. RELIANCE.NS / TSLA"
-    ).strip().upper()
+    st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='text-align:center; color:#444; font-size:12px; padding:20px;'>
+        Stock Research AI analyses live financial data from NSE, BSE, NYSE and 25+ global exchanges
+    </div>
+    """, unsafe_allow_html=True)
 
-    # determine final ticker
-    if manual_ticker:
-        ticker = sanitise_ticker(manual_ticker)
-    elif selected_company:
-        ticker = ALL_COMPANIES.get(selected_company, "")
-    else:
-        ticker = ""
-
-    if ticker:
-        st.caption(f"Ticker: `{ticker}`")
-
-    analyse_btn = st.button(
-        "🚀 Analyse",
-        use_container_width=True,
-        type="primary",
-        disabled=(ticker == "")
-    )
-
-    st.divider()
-
-    if vectorstore:
-        st.success("✅ Annual report loaded")
-    else:
-        st.info("ℹ️ Annual report not loaded")
-
-    st.divider()
-    st.caption("Not financial advice")
-    st.caption("Built by Anshika Singh")
-    st.caption("Electronics Engg · Banasthali Vidyapith")
-
-# ── MAIN CONTENT ──────────────────────────
-
-if analyse_btn and ticker:
-
-    # session rate limit
-    if st.session_state.request_count >= 10:
-        st.error("⚠️ You have reached 10 requests this session. Please refresh the page to continue.")
-        st.stop()
-
-    with st.spinner(f"Fetching data for {ticker}..."):
-        try:
-            import yfinance as yf
-            from src.data import analyse_history
-            from src.signals import basic_signal
-            from src.llm import generate_stock_brief
-            from src.utils import get_currency_symbol
-
-            data    = cached_stock_data(ticker)
-            signals = basic_signal(data)
-            history = analyse_history(ticker)
-            currency = get_currency_symbol(ticker)
-
-            stock      = yf.Ticker(ticker)
-            price_hist = stock.history(period="1y")
-            price_data = {
-                "dates":  price_hist.index.strftime("%Y-%m-%d").tolist(),
-                "closes": price_hist["Close"].round(2).tolist(),
-            }
-
-        except Exception as e:
-            if "too many requests" in str(e).lower() or "rate limited" in str(e).lower():
-                st.error("⚠️ Market data service is busy. Please wait 2 minutes and try again.")
-            else:
-                st.error(f"Error fetching data: {str(e)}")
-            st.stop()
-
-    with st.spinner("Generating AI research brief..."):
-        try:
-            brief = generate_stock_brief(
-                data, signals, ticker, vectorstore, lang
-            )
-            st.session_state.request_count += 1
-
-        except Exception as e:
-            if "rate_limit" in str(e).lower() or "429" in str(e) or "capacity" in str(e).lower():
-                st.error("⚠️ AI service is at capacity. Please try again in 30 minutes.")
-            else:
-                st.error(f"Error generating brief: {str(e)}")
-            st.stop()
-
-    # ── COMPANY HEADER ────────────────────
-
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.header(f"🏢 {brief['company_name']}")
-        st.markdown(f"**Sector:** {brief['sector']} &nbsp;|&nbsp; **Exchange:** {exchange} &nbsp;|&nbsp; **Ticker:** `{ticker}`")
-    with col2:
-        price = brief['key_metrics'].get('price', 'N/A')
-        ret   = brief['key_metrics'].get('one_year_return', 'N/A')
-        st.metric("Current Price (Live)", price, ret)
-
-    st.divider()
-
-    # ── KEY METRICS ───────────────────────
-
-    st.markdown('<div class="section-header">📊 Key Metrics</div>', unsafe_allow_html=True)
-    m = brief['key_metrics']
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("P/E Ratio",      m.get('pe_ratio', 'N/A'))
-    c2.metric("P/B Ratio",      m.get('pb_ratio', 'N/A'))
-    c3.metric("Profit Margin",  m.get('profit_margin', 'N/A'))
-    c4.metric("ROE",            m.get('roe', 'N/A'))
-
-    c5, c6, c7, c8 = st.columns(4)
-    c5.metric("Debt / Equity",   m.get('debt_to_equity', 'N/A'))
-    c6.metric("Revenue Growth",  m.get('revenue_growth', 'N/A'))
-    c7.metric("1Y Return",       m.get('one_year_return', 'N/A'))
-    c8.metric("EPS",             m.get('price', 'N/A'))
-
-    st.divider()
-
-    # ── SIGNALS DETECTED ──────────────────
-
-    st.markdown('<div class="section-header">🔔 Signals Detected</div>', unsafe_allow_html=True)
-    signals_html = ""
-    for s in signals:
-        if "WARNING" in s:
-            signals_html += f'<span class="signal-bad">⚠ {s}</span> '
-        elif "STRONG" in s or "HIGH ROE" in s or "LOW debt" in s.upper():
-            signals_html += f'<span class="signal-good">✅ {s}</span> '
-        else:
-            signals_html += f'<span class="signal-warn">ℹ {s}</span> '
-    st.markdown(f'<div class="insight-box">{signals_html}</div>', unsafe_allow_html=True)
-
-    st.divider()
-
-    # ── PRICE CHART ───────────────────────
-
-    if price_data and price_data.get("dates"):
-        st.markdown('<div class="section-header">📉 Price History — 1 Year</div>', unsafe_allow_html=True)
-
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=price_data["dates"],
-            y=price_data["closes"],
-            mode="lines",
-            name="Price",
-            line=dict(color="#00d4aa", width=2),
-            fill="tozeroy",
-            fillcolor="rgba(0, 212, 170, 0.05)"
-        ))
-
-        if history:
-            fig.add_hline(
-                y=history['ma50'],
-                line_color="#ffa500",
-                line_dash="dash",
-                annotation_text=f"MA50 {currency}{history['ma50']:,.0f}",
-                annotation_font_color="#ffa500"
-            )
-            fig.add_hline(
-                y=history['ma200'],
-                line_color="#ff4b4b",
-                line_dash="dash",
-                annotation_text=f"MA200 {currency}{history['ma200']:,.0f}",
-                annotation_font_color="#ff4b4b"
-            )
-
-        fig.update_layout(
-            paper_bgcolor="#0e1117",
-            plot_bgcolor="#1e2130",
-            font_color="white",
-            height=400,
-            margin=dict(l=20, r=20, t=20, b=20),
-            xaxis=dict(gridcolor="#2d3250", showgrid=True),
-            yaxis=dict(gridcolor="#2d3250", showgrid=True, tickprefix=currency),
-            hovermode="x unified"
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-        if history:
-            h1, h2, h3, h4 = st.columns(4)
-            h1.metric("52W High",   f"{currency}{history['high_52w']:,.2f}")
-            h2.metric("52W Low",    f"{currency}{history['low_52w']:,.2f}")
-            h3.metric("Avg Price",  f"{currency}{history['avg_price']:,.2f}")
-            h4.metric("Volatility", f"{history['volatility']}% daily")
-
-    st.divider()
-
-    # ── TWO COLUMN LAYOUT ─────────────────
-
-    left, right = st.columns(2)
-
-    with left:
-        st.markdown('<div class="section-header">📌 Analyst Summary</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="insight-box">{brief["analyst_summary"]}</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-header">💰 Valuation</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="insight-box">{brief["valuation_commentary"]}</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-header">📈 Growth Outlook</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="insight-box">{brief["growth_outlook"]}</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-header">⚠️ Risk Flags</div>', unsafe_allow_html=True)
-        risks_html = "".join([f'<span class="risk-tag">⚠ {r}</span>' for r in brief.get('risk_flags', [])])
-        st.markdown(f'<div class="insight-box">{risks_html}</div>', unsafe_allow_html=True)
-
-    with right:
-        st.markdown('<div class="section-header">💪 Financial Health</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="insight-box">{brief["financial_health"]}</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-header">👤 Investor Profile</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="insight-box">{brief["investor_profile"]}</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-header">🔍 Watch Out For</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="insight-box">{brief["watch_out_for"]}</div>', unsafe_allow_html=True)
-
-    st.divider()
-
-    # ── NEWS CONTEXT ──────────────────────
-
-    st.markdown('<div class="section-header">📰 Latest News & Market Context</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="news-box">{brief.get("news_context", "No recent news available.")}</div>', unsafe_allow_html=True)
-
-    # ── ANNUAL REPORT INSIGHTS ────────────
-
-    if vectorstore and brief.get("annual_report_insights"):
-        st.markdown('<div class="section-header">📋 Annual Report Insights</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="rag-box">{brief.get("annual_report_insights", "Not available.")}</div>', unsafe_allow_html=True)
-
-    st.divider()
-
-elif analyse_btn and not ticker:
-    st.warning("Please select a company or enter a ticker first.")
+# ══════════════════════════════════════════
+# PAGE 2 — MAIN APP
+# ══════════════════════════════════════════
 
 else:
-    # ── LANDING STATE ─────────────────────
-    st.markdown("### How to use")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.info("**Step 1**\nSelect exchange and company from the sidebar dropdown")
-    with col2:
-        st.info("**Step 2**\nChoose English or Hindi and click Analyse")
-    with col3:
-        st.info("**Step 3**\nRead the full AI research brief with chart, news and signals")
+    level_info = KNOWLEDGE_LEVELS[st.session_state.knowledge_level]
 
-    st.divider()
+    # ── TOP BAR ───────────────────────────
+    top1, top2, top3 = st.columns([6, 2, 2])
+    with top1:
+        st.markdown(f"""
+        <div style='padding:8px 0;'>
+            <span class='level-badge'>{st.session_state.knowledge_level}</span>
+            <span style='color:#444; font-size:12px; margin-left:8px;'>
+                Analysis tailored to your level
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+    with top2:
+        if st.button("📚 Glossary", use_container_width=True):
+            st.session_state.current_page = (
+                "glossary" if st.session_state.current_page != "glossary" else "home"
+            )
+    with top3:
+        if st.button("↩ Change Level", use_container_width=True):
+            st.session_state.knowledge_level = None
+            st.rerun()
 
-    st.markdown("### Popular stocks to try")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("**🇮🇳 NSE India**")
-        st.code("Reliance Industries\nHDFC Bank\nInfosys\nTata Motors")
-    with c2:
-        st.markdown("**🇺🇸 NYSE / NASDAQ**")
-        st.code("Apple\nTesla\nNVIDIA\nMicrosoft")
-    with c3:
-        st.markdown("**📊 BSE India**")
-        st.code("YES Bank\nTata Power\nBHEL\nSUZLON")
+    st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
 
-    st.divider()
-    st.markdown("*Built by Anshika Singh — Electronics Engineering, Banasthali Vidyapith*")
+    # ── GLOSSARY PAGE ─────────────────────
+    if st.session_state.current_page == "glossary":
+        st.markdown("<div style='font-size:22px; font-weight:700; color:#fff; margin-bottom:16px;'>📚 Financial Terms Glossary</div>", unsafe_allow_html=True)
+        search_term = st.text_input("Search a term", placeholder="e.g. P/E Ratio, ROE, Market Cap...")
+        for term, definition in GLOSSARY.items():
+            if not search_term or search_term.lower() in term.lower():
+                st.markdown(f"""
+                <div class="glossary-term">
+                    <div class="glossary-word">{term}</div>
+                    <div class="glossary-def">{definition}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-# ── FOOTER ────────────────────────────────
+    # ── MAIN SEARCH PAGE ──────────────────
+    else:
+        # search bar
+        st.markdown("""
+        <div style='text-align:center; font-size:28px; font-weight:700;
+             color:#fff; margin:20px 0 8px 0; letter-spacing:-0.5px;'>
+            Search any company
+        </div>
+        <div style='text-align:center; color:#555; font-size:14px; margin-bottom:24px;'>
+            Type a company name — suggestions will appear
+        </div>
+        """, unsafe_allow_html=True)
 
-st.divider()
-st.markdown(
-    "<center><small>Stock Research AI — by Anshika Singh | "
-    "Powered by yfinance + Groq (Llama 3.3) | "
-    "Not financial advice</small></center>",
-    unsafe_allow_html=True
-)
+        search_col = st.columns([1, 4, 1])[1]
+        with search_col:
+            search_query = st.text_input(
+                "",
+                placeholder="🔍  Search company — e.g. Reliance, Apple, HDFC...",
+                label_visibility="collapsed"
+            )
+
+        # autocomplete suggestions
+        if search_query and len(search_query) >= 2:
+            matches = {
+                name: ticker
+                for name, ticker in ALL_COMPANIES.items()
+                if search_query.lower() in name.lower()
+            }
+
+            if matches:
+                st.markdown("<div style='max-width:600px; margin:0 auto;'>", unsafe_allow_html=True)
+                for name, ticker in list(matches.items())[:6]:
+                    col_s1, col_s2 = st.columns([5, 1])
+                    with col_s1:
+                        st.markdown(f"""
+                        <div class="suggestion-item">
+                            <span>{name}</span>
+                            <span class="suggestion-ticker">{ticker}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with col_s2:
+                        if st.button("Analyse →", key=f"select_{ticker}"):
+                            st.session_state.selected_ticker = ticker
+                            st.session_state.current_page = "analysis"
+                            st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style='text-align:center; color:#555; font-size:13px; margin:8px 0;'>
+                    Company not in list — enter ticker manually below
+                </div>
+                """, unsafe_allow_html=True)
+                manual_col = st.columns([1, 4, 1])[1]
+                with manual_col:
+                    manual = st.text_input(
+                        "",
+                        placeholder="Enter ticker manually e.g. RELIANCE.NS / TSLA",
+                        label_visibility="collapsed",
+                        key="manual_ticker"
+                    )
+                    if manual and st.button("Analyse Manual Ticker →", use_container_width=True):
+                        st.session_state.selected_ticker = sanitise_ticker(manual)
+                        st.session_state.current_page = "analysis"
+                        st.rerun()
+
+        # popular stocks
+        if not search_query:
+            st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:center; color:#555; font-size:13px; margin-bottom:16px;'>POPULAR STOCKS</div>", unsafe_allow_html=True)
+
+            popular = {
+                "Reliance Industries": "RELIANCE.NS",
+                "HDFC Bank": "HDFCBANK.NS",
+                "Infosys": "INFY.NS",
+                "Tata Motors": "TATAMOTORS.NS",
+                "Tesla": "TSLA",
+                "NVIDIA": "NVDA",
+                "Apple": "AAPL",
+                "Zomato": "ZOMATO.NS",
+            }
+
+            cols = st.columns(4)
+            for i, (name, ticker) in enumerate(popular.items()):
+                with cols[i % 4]:
+                    if st.button(f"{name}", key=f"pop_{ticker}", use_container_width=True):
+                        st.session_state.selected_ticker = ticker
+                        st.session_state.current_page = "analysis"
+                        st.rerun()
+
+        # ── ANALYSIS PAGE ──────────────────
+        if st.session_state.current_page == "analysis" and st.session_state.selected_ticker:
+
+            ticker = st.session_state.selected_ticker
+
+            # back button
+            if st.button("← Back to Search"):
+                st.session_state.current_page = "home"
+                st.session_state.selected_ticker = ""
+                st.rerun()
+
+            st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+
+            # rate limit check
+            if st.session_state.request_count >= 10:
+                st.error("⚠️ You have reached 10 requests this session. Please refresh the page.")
+                st.stop()
+
+            with st.spinner("Fetching live data..."):
+                try:
+                    import yfinance as yf
+                    from src.data import analyse_history
+                    from src.signals import basic_signal
+                    from src.utils import get_currency_symbol
+
+                    data    = cached_stock_data(ticker)
+                    signals = basic_signal(data)
+                    history = analyse_history(ticker)
+                    currency = get_currency_symbol(ticker)
+
+                    stock      = yf.Ticker(ticker)
+                    price_hist = stock.history(period="1y")
+                    price_data = {
+                        "dates":  price_hist.index.strftime("%Y-%m-%d").tolist(),
+                        "closes": price_hist["Close"].round(2).tolist(),
+                    }
+
+                except Exception as e:
+                    if "too many requests" in str(e).lower():
+                        st.error("⚠️ Market data service is busy. Please wait 2 minutes and try again.")
+                    else:
+                        st.error(f"Error fetching data: {str(e)}")
+                    st.stop()
+
+            with st.spinner("Generating AI research brief..."):
+                try:
+                    from src.llm import generate_stock_brief
+                    brief = generate_stock_brief(
+                        data, signals, ticker, vectorstore, "English"
+                    )
+                    st.session_state.request_count += 1
+
+                except Exception as e:
+                    if "rate_limit" in str(e).lower() or "429" in str(e) or "capacity" in str(e).lower():
+                        st.error("⚠️ AI service is at capacity. Please try again in 30 minutes.")
+                    else:
+                        st.error(f"Error generating brief: {str(e)}")
+                    st.stop()
+
+            # ── COMPANY HEADER ────────────────
+
+            price_val = brief['key_metrics'].get('price', 'N/A')
+            ret_val   = brief['key_metrics'].get('one_year_return', 'N/A')
+
+            try:
+                ret_float = float(str(ret_val).replace('%','').replace('+',''))
+                ret_class = "price-change-pos" if ret_float >= 0 else "price-change-neg"
+                ret_arrow = "▲" if ret_float >= 0 else "▼"
+            except Exception:
+                ret_class = "price-change-pos"
+                ret_arrow = ""
+
+            st.markdown(f"""
+            <div class="company-header">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <div class="company-name">{brief['company_name']}</div>
+                        <div class="company-meta">
+                            {brief['sector']} &nbsp;·&nbsp; {ticker}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="price-display">{price_val}</div>
+                        <div class="{ret_class}">{ret_arrow} {ret_val} (1Y)</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # ── KEY METRICS ROW ───────────────
+
+            st.markdown("<div style='font-size:11px; color:#555; text-transform:uppercase; letter-spacing:1px; margin:16px 0 8px;'>KEY METRICS</div>", unsafe_allow_html=True)
+
+            m = brief['key_metrics']
+            mc1, mc2, mc3, mc4, mc5, mc6 = st.columns(6)
+
+            metrics_display = [
+                ("P/E Ratio", m.get('pe_ratio', 'N/A')),
+                ("P/B Ratio", m.get('pb_ratio', 'N/A')),
+                ("Profit Margin", m.get('profit_margin', 'N/A')),
+                ("ROE", m.get('roe', 'N/A')),
+                ("Debt / Equity", m.get('debt_to_equity', 'N/A')),
+                ("Revenue Growth", m.get('revenue_growth', 'N/A')),
+            ]
+
+            for col, (label, value) in zip(
+                [mc1, mc2, mc3, mc4, mc5, mc6],
+                metrics_display
+            ):
+                with col:
+                    st.markdown(f"""
+                    <div class="metric-card">
+                        <div class="metric-label">{label}</div>
+                        <div class="metric-value">{value}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            # ── PRICE CHART ───────────────────
+
+            if price_data and price_data.get("dates"):
+                st.markdown("<div style='font-size:11px; color:#555; text-transform:uppercase; letter-spacing:1px; margin:20px 0 8px;'>PRICE HISTORY — 1 YEAR</div>", unsafe_allow_html=True)
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=price_data["dates"],
+                    y=price_data["closes"],
+                    mode="lines",
+                    name="Price",
+                    line=dict(color="#00d4aa", width=2),
+                    fill="tozeroy",
+                    fillcolor="rgba(0, 212, 170, 0.04)"
+                ))
+
+                if history:
+                    fig.add_trace(go.Scatter(
+                        x=price_data["dates"][-50:],
+                        y=[history['ma50']] * min(50, len(price_data["dates"])),
+                        mode="lines",
+                        name=f"MA50 {currency}{history['ma50']:,.0f}",
+                        line=dict(color="#ffa500", width=1, dash="dash")
+                    ))
+                    fig.add_trace(go.Scatter(
+                        x=price_data["dates"],
+                        y=[history['ma200']] * len(price_data["dates"]),
+                        mode="lines",
+                        name=f"MA200 {currency}{history['ma200']:,.0f}",
+                        line=dict(color="#ff4b4b", width=1, dash="dash")
+                    ))
+
+                fig.update_layout(
+                    paper_bgcolor="#1a1a1a",
+                    plot_bgcolor="#1a1a1a",
+                    font_color="#888",
+                    height=350,
+                    margin=dict(l=20, r=20, t=20, b=20),
+                    xaxis=dict(
+                        gridcolor="#222",
+                        showgrid=True,
+                        zeroline=False
+                    ),
+                    yaxis=dict(
+                        gridcolor="#222",
+                        showgrid=True,
+                        zeroline=False,
+                        tickprefix=currency
+                    ),
+                    hovermode="x unified",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1,
+                        font=dict(size=11),
+                        bgcolor="rgba(0,0,0,0)"
+                    )
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                if history:
+                    hc1, hc2, hc3, hc4 = st.columns(4)
+                    hc1.metric("52W High",  f"{currency}{history['high_52w']:,.2f}")
+                    hc2.metric("52W Low",   f"{currency}{history['low_52w']:,.2f}")
+                    hc3.metric("Avg Price", f"{currency}{history['avg_price']:,.2f}")
+                    hc4.metric("Volatility",f"{history['volatility']}% daily")
+
+            st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+
+            # ── SIGNALS ───────────────────────
+
+            st.markdown("<div style='font-size:11px; color:#555; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;'>SIGNALS DETECTED</div>", unsafe_allow_html=True)
+            signals_html = ""
+            for s in signals:
+                if "WARNING" in s:
+                    signals_html += f'<span class="risk-tag">⚠ {s}</span> '
+                elif "STRONG" in s or "HIGH ROE" in s:
+                    signals_html += f'<span class="signal-good">✅ {s}</span> '
+                else:
+                    signals_html += f'<span class="signal-warn">ℹ {s}</span> '
+            st.markdown(f'<div class="section-card">{signals_html}</div>', unsafe_allow_html=True)
+
+            st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+
+            # ── AI ANALYSIS ───────────────────
+
+            st.markdown("<div style='font-size:11px; color:#555; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;'>AI RESEARCH BRIEF</div>", unsafe_allow_html=True)
+
+            left, right = st.columns(2)
+
+            with left:
+                st.markdown(f"""
+                <div class="section-card">
+                    <div class="section-title">📌 Analyst Summary</div>
+                    <div class="section-text">{brief["analyst_summary"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.markdown(f"""
+                <div class="section-card">
+                    <div class="section-title">💰 Valuation</div>
+                    <div class="section-text">{brief["valuation_commentary"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.markdown(f"""
+                <div class="section-card">
+                    <div class="section-title">📈 Growth Outlook</div>
+                    <div class="section-text">{brief["growth_outlook"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                risks_html = "".join([
+                    f'<span class="risk-tag">⚠ {r}</span>'
+                    for r in brief.get('risk_flags', [])
+                ])
+                st.markdown(f"""
+                <div class="section-card">
+                    <div class="section-title">⚠️ Risk Flags</div>
+                    <div>{risks_html}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with right:
+                st.markdown(f"""
+                <div class="section-card">
+                    <div class="section-title">💪 Financial Health</div>
+                    <div class="section-text">{brief["financial_health"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.markdown(f"""
+                <div class="section-card">
+                    <div class="section-title">👤 Investor Profile</div>
+                    <div class="section-text">{brief["investor_profile"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.markdown(f"""
+                <div class="section-card">
+                    <div class="section-title">🔍 Watch Out For</div>
+                    <div class="section-text">{brief["watch_out_for"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+
+            # ── NEWS ──────────────────────────
+
+            st.markdown(f"""
+            <div class="news-card">
+                <div class="section-title">📰 Latest News & Market Context</div>
+                <div class="section-text">{brief.get("news_context", "No recent news available.")}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # ── ANNUAL REPORT ─────────────────
+
+            if vectorstore and brief.get("annual_report_insights"):
+                st.markdown(f"""
+                <div class="rag-card">
+                    <div class="section-title">📋 Annual Report Insights</div>
+                    <div class="section-text">{brief.get("annual_report_insights")}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+
+            # ── BEGINNER EXPLAINER ────────────
+
+            if "Beginner" in st.session_state.knowledge_level:
+                st.markdown("<div style='font-size:11px; color:#555; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;'>WHAT DO THESE NUMBERS MEAN?</div>", unsafe_allow_html=True)
+                st.markdown("""
+                <div class="section-card">
+                    <div class="section-title">📖 Quick Guide for Beginners</div>
+                    <div class="section-text">
+                        <b>P/E Ratio</b> — Think of it as how expensive the stock is vs how much money the company makes. Lower is generally better.<br><br>
+                        <b>ROE</b> — Imagine you gave the company ₹100. ROE tells you how much profit they made with it. 15% means they made ₹15 profit on your ₹100.<br><br>
+                        <b>Debt/Equity</b> — How much the company has borrowed compared to what it owns. Very high debt can be risky.<br><br>
+                        <b>Profit Margin</b> — If revenue is ₹100, a 10% margin means ₹10 is actual profit. Higher is better.<br><br>
+                        <b>1Y Return</b> — If you had bought this stock a year ago, this is how much you would have gained or lost.
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # ── FOOTER ────────────────────────────
+    st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='text-align:center; color:#333; font-size:12px; padding:16px;'>
+        Stock Research AI — by Anshika Singh &nbsp;·&nbsp;
+        Electronics Engineering · Banasthali Vidyapith &nbsp;·&nbsp;
+        Not financial advice
+    </div>
+    """, unsafe_allow_html=True)
