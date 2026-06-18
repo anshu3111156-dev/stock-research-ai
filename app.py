@@ -23,124 +23,68 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── i18n ──────────────────────────────────────────────────────────────────────
+# ── SIMPLE STRING HELPERS (English only) ─────────────────────────────────────
 STRINGS = {
-    "en": {
-        "hero_title":     "Smart research for",
-        "hero_highlight": "every investor.",
-        "hero_sub":       "AI-powered equity analysis from NSE, BSE, NYSE and 25+ global exchanges",
-        "level_prompt":   "Tell us your investing experience so we can tailor the analysis for you",
-        "search_title":   "Search any company",
-        "search_sub":     "Type a company name or select from the exchange list below",
-        "exchange_label": "Exchange",
-        "company_label":  "Company",
-        "analyse_btn":    "Analyse",
-        "back_btn":       "← Back to Search",
-        "change_level":   "↩ Change Level",
-        "glossary_btn":   "📚 Glossary",
-        "glossary_title": "📚 Financial Terms Glossary",
-        "glossary_search":"Search a term — e.g. P/E Ratio, ROE, Market Cap...",
-        "popular":        "POPULAR STOCKS",
-        "how_it_works":   "HOW IT WORKS",
-        "key_metrics":    "KEY METRICS",
-        "price_history":  "PRICE HISTORY — 1 YEAR",
-        "signals":        "SIGNALS DETECTED",
-        "ai_brief":       "AI RESEARCH BRIEF",
-        "analyst_summary":"📌 Analyst Summary",
-        "valuation":      "💰 Valuation",
-        "growth":         "📈 Growth Outlook",
-        "risks":          "⚠️ Risk Flags",
-        "health":         "💪 Financial Health",
-        "profile":        "👤 Investor Profile",
-        "watch":          "🔍 Watch Out For",
-        "news":           "📰 Latest News & Market Context",
-        "annual":         "📋 Annual Report Insights",
-        "beginner_guide": "WHAT DO THESE NUMBERS MEAN?",
-        "beginner_title": "📖 Simple Guide — What You Just Read",
-        "not_advice":     "Not financial advice",
-        "fetching":       "Fetching live market data...",
-        "generating":     "Generating AI research brief...",
-        "footer":         "StockAI · by Anshika Singh · Electronics Engineering, Banasthali Vidyapith · Powered by yfinance · Groq · RAG · Not financial advice",
-        "tailored":       "Analysis tailored to your experience level",
-        "nav_tag":        "Groq · yfinance · RAG",
-        "level_i_am":     "I'm a",
-        "or_ticker":      "Or enter a ticker manually (e.g. RELIANCE.NS / TSLA)",
-        "invalid_ticker": "Invalid ticker. Use only letters, numbers, dots and hyphens.",
-        "not_found":      "Company not found — enter ticker manually below",
-        "session_limit":  "You have reached the session request limit. Please refresh the page.",
-        "rate_wait":      "Please wait {secs}s before the next request.",
-        "busy":           "⚠️ Market data service is busy. Please wait 2 minutes and try again.",
-        "ai_busy":        "⚠️ AI service is at capacity. Please try again in 30 minutes.",
-        "fetch_error":    "⚠️ Could not fetch data for {name}. Check the ticker and try again.",
-        "ai_warn":        "⚠️ AI brief unavailable. Showing data view.",
-    },
-    "hi": {
-        "hero_title":     "हर निवेशक के लिए",
-        "hero_highlight": "स्मार्ट रिसर्च।",
-        "hero_sub":       "NSE, BSE, NYSE और 25+ ग्लोबल एक्सचेंज से AI-संचालित इक्विटी विश्लेषण",
-        "level_prompt":   "अपना निवेश अनुभव बताएं ताकि हम विश्लेषण आपके अनुसार बना सकें",
-        "search_title":   "कोई भी कंपनी खोजें",
-        "search_sub":     "कंपनी का नाम टाइप करें या नीचे से एक्सचेंज चुनें",
-        "exchange_label": "एक्सचेंज",
-        "company_label":  "कंपनी",
-        "analyse_btn":    "विश्लेषण",
-        "back_btn":       "← खोज पर वापस",
-        "change_level":   "↩ स्तर बदलें",
-        "glossary_btn":   "📚 शब्दावली",
-        "glossary_title": "📚 वित्तीय शब्दावली",
-        "glossary_search":"शब्द खोजें...",
-        "popular":        "लोकप्रिय स्टॉक्स",
-        "how_it_works":   "यह कैसे काम करता है",
-        "key_metrics":    "मुख्य आंकड़े",
-        "price_history":  "मूल्य इतिहास — 1 वर्ष",
-        "signals":        "संकेत",
-        "ai_brief":       "AI रिसर्च सारांश",
-        "analyst_summary":"📌 विश्लेषक सारांश",
-        "valuation":      "💰 मूल्यांकन",
-        "growth":         "📈 विकास दृष्टिकोण",
-        "risks":          "⚠️ जोखिम",
-        "health":         "💪 वित्तीय स्वास्थ्य",
-        "profile":        "👤 निवेशक प्रोफ़ाइल",
-        "watch":          "🔍 ध्यान रखें",
-        "news":           "📰 ताज़ा समाचार",
-        "annual":         "📋 वार्षिक रिपोर्ट",
-        "beginner_guide": "इन संख्याओं का मतलब क्या है?",
-        "beginner_title": "📖 सरल गाइड",
-        "not_advice":     "वित्तीय सलाह नहीं",
-        "fetching":       "लाइव डेटा प्राप्त हो रहा है...",
-        "generating":     "AI रिसर्च तैयार हो रही है...",
-        "footer":         "StockAI · Anshika Singh द्वारा · वित्तीय सलाह नहीं",
-        "tailored":       "आपके स्तर के अनुसार विश्लेषण",
-        "nav_tag":        "Groq · yfinance · RAG",
-        "level_i_am":     "मैं हूँ",
-        "or_ticker":      "या टिकर मैन्युअल दर्ज करें (जैसे RELIANCE.NS / TSLA)",
-        "invalid_ticker": "अमान्य टिकर। केवल अक्षर, संख्याएं, बिंदु और हाइफन उपयोग करें।",
-        "not_found":      "कंपनी नहीं मिली — नीचे टिकर दर्ज करें",
-        "session_limit":  "सत्र सीमा समाप्त। कृपया पेज रिफ्रेश करें।",
-        "rate_wait":      "अगली रिक्वेस्ट के लिए {secs}s प्रतीक्षा करें।",
-        "busy":           "⚠️ मार्केट डेटा व्यस्त है। 2 मिनट बाद पुनः प्रयास करें।",
-        "ai_busy":        "⚠️ AI सेवा व्यस्त है। 30 मिनट बाद पुनः प्रयास करें।",
-        "fetch_error":    "⚠️ {name} का डेटा नहीं मिला। टिकर जांचें।",
-        "ai_warn":        "⚠️ AI सारांश उपलब्ध नहीं। डेटा दृश्य दिखाया जा रहा है।",
-    },
+    "hero_title":     "Smart research for",
+    "hero_highlight": "every investor.",
+    "hero_sub":       "AI-powered equity analysis from NSE, BSE, NYSE and 25+ global exchanges",
+    "level_prompt":   "Tell us your investing experience so we can tailor the analysis for you",
+    "search_title":   "Search any company",
+    "search_sub":     "Type a company name or browse by exchange below",
+    "analyse_btn":    "Analyse",
+    "back_btn":       "← Back to Search",
+    "change_level":   "↩ Change Level",
+    "glossary_btn":   "📚 Glossary",
+    "glossary_title": "📚 Financial Terms Glossary",
+    "glossary_search":"Search a term — e.g. P/E Ratio, ROE, Market Cap...",
+    "popular":        "POPULAR STOCKS",
+    "how_it_works":   "HOW IT WORKS",
+    "key_metrics":    "KEY METRICS",
+    "price_history":  "PRICE HISTORY — 1 YEAR",
+    "signals":        "SIGNALS DETECTED",
+    "ai_brief":       "AI RESEARCH BRIEF",
+    "analyst_summary":"📌 Analyst Summary",
+    "valuation":      "💰 Valuation",
+    "growth":         "📈 Growth Outlook",
+    "risks":          "⚠️ Risk Flags",
+    "health":         "💪 Financial Health",
+    "profile":        "👤 Investor Profile",
+    "watch":          "🔍 Watch Out For",
+    "news":           "📰 Latest News & Market Context",
+    "annual":         "📋 Annual Report Insights",
+    "beginner_guide": "WHAT DO THESE NUMBERS MEAN?",
+    "beginner_title": "📖 Simple Guide — What You Just Read",
+    "not_advice":     "Not financial advice",
+    "fetching":       "Fetching live market data...",
+    "generating":     "Generating AI research brief...",
+    "footer":         "StockAI · by Anshika Singh · Electronics Engineering, Banasthali Vidyapith · Powered by yfinance · Groq · RAG · Not financial advice",
+    "tailored":       "Analysis tailored to your experience level",
+    "nav_tag":        "Groq · yfinance · RAG",
+    "level_i_am":     "I'm a",
+    "or_ticker":      "Or enter a ticker manually (e.g. RELIANCE.NS / TSLA)",
+    "invalid_ticker": "Invalid ticker. Use only letters, numbers, dots and hyphens.",
+    "not_found":      "Company not found — enter ticker manually below",
+    "session_limit":  "You have reached the session request limit. Please refresh the page.",
+    "rate_wait":      "Please wait {secs}s before the next request.",
+    "busy":           "⚠️ Market data service is busy. Please wait 2 minutes and try again.",
+    "ai_warn":        "⚠️ AI brief unavailable. Showing data view.",
+    "fetch_error":    "⚠️ Could not fetch data for {name}. Check the ticker and try again.",
 }
 
 def t(key, **kwargs):
-    lang = st.session_state.get("lang", "en")
-    s = STRINGS.get(lang, STRINGS["en"]).get(key, key)
+    s = STRINGS.get(key, key)
     return s.format(**kwargs) if kwargs else s
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 *, *::before, *::after {
     box-sizing: border-box;
-    font-family: 'Inter', 'Noto Sans Devanagari', -apple-system, sans-serif;
+    font-family: 'Inter', -apple-system, sans-serif;
 }
 
-/* ── RESET STREAMLIT ── */
 #MainMenu, footer, header, .stDeployButton,
 div[data-testid="stDecoration"],
 [data-testid="stSidebar"] { display: none !important; }
@@ -166,12 +110,9 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     align-items: center;
     justify-content: space-between;
     margin: 0 -2rem 0 -2rem;
-    position: sticky;
-    top: 0;
-    z-index: 999;
 }
 .tt-logo {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #ffffff;
     letter-spacing: -0.3px;
@@ -195,6 +136,38 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     padding: 3px 8px;
 }
 
+/* ── TICKER STRIP ── */
+.tt-strip {
+    background: #111827;
+    border-bottom: 1px solid #2d3548;
+    padding: 9px 0;
+    margin: 0 -2rem 0 -2rem;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.tt-strip-inner {
+    display: inline-flex;
+    gap: 0;
+    animation: marquee 40s linear infinite;
+}
+.tt-strip:hover .tt-strip-inner { animation-play-state: paused; }
+@keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.tt-strip-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 28px;
+    border-right: 1px solid #2d3548;
+    font-size: 12px;
+}
+.tt-strip-name  { color: #94a3b8; font-weight: 600; letter-spacing: 0.3px; }
+.tt-strip-price { color: #ffffff; font-weight: 700; }
+.tt-strip-up    { color: #22c55e; font-weight: 600; }
+.tt-strip-down  { color: #ef4444; font-weight: 600; }
+
 /* ── HERO ── */
 .tt-hero {
     text-align: center;
@@ -213,7 +186,6 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     font-size: 15px;
     color: #64748b;
     margin-top: 12px;
-    font-weight: 400;
 }
 
 /* ── LEVEL CARDS ── */
@@ -224,7 +196,6 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     padding: 26px 16px;
     text-align: center;
     transition: all 0.18s ease;
-    cursor: pointer;
     min-height: 160px;
     display: flex;
     flex-direction: column;
@@ -266,9 +237,6 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     text-transform: uppercase;
     letter-spacing: 1.1px;
     margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
 }
 .tt-card-text {
     font-size: 13px;
@@ -292,11 +260,7 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     letter-spacing: 0.9px;
     margin-bottom: 7px;
 }
-.tt-metric-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: #ffffff;
-}
+.tt-metric-value { font-size: 20px; font-weight: 700; color: #ffffff; }
 
 /* ── COMPANY HEADER ── */
 .tt-company-header {
@@ -311,19 +275,13 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     flex-wrap: wrap;
     gap: 16px;
 }
-.tt-company-name {
-    font-size: 26px;
-    font-weight: 800;
-    color: #ffffff;
-    letter-spacing: -0.5px;
-    margin-bottom: 4px;
-}
+.tt-company-name { font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin-bottom: 4px; }
 .tt-company-meta { font-size: 12px; color: #64748b; }
 .tt-price { font-size: 32px; font-weight: 700; color: #ffffff; text-align: right; }
 .tt-return-up   { font-size: 14px; font-weight: 600; color: #22c55e; }
 .tt-return-down { font-size: 14px; font-weight: 600; color: #ef4444; }
 
-/* ── TRAFFIC LIGHT (Beginner) ── */
+/* ── TRAFFIC LIGHT ── */
 .tl-green {
     background: rgba(34,197,94,0.06);
     border: 1.5px solid rgba(34,197,94,0.2);
@@ -351,175 +309,161 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     margin: 0 0 16px;
     display: flex; align-items: center; gap: 12px;
 }
-.tl-dot-green  { width: 13px; height: 13px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
-.tl-dot-yellow { width: 13px; height: 13px; border-radius: 50%; background: #ff8c00; flex-shrink: 0; }
-.tl-dot-red    { width: 13px; height: 13px; border-radius: 50%; background: #ef4444; flex-shrink: 0; }
+.tl-dot-green  { width:13px;height:13px;border-radius:50%;background:#22c55e;flex-shrink:0; }
+.tl-dot-yellow { width:13px;height:13px;border-radius:50%;background:#ff8c00;flex-shrink:0; }
+.tl-dot-red    { width:13px;height:13px;border-radius:50%;background:#ef4444;flex-shrink:0; }
 .tl-text { font-size: 13px; color: #e2e8f0; font-weight: 500; }
 
 /* ── SIGNAL CHIPS ── */
-.chip-red {
-    display: inline-flex; align-items: center;
-    background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
-    color: #ef4444; border-radius: 20px;
-    padding: 5px 12px; font-size: 12px; font-weight: 500; margin: 3px; gap: 5px;
-}
-.chip-green {
-    display: inline-flex; align-items: center;
-    background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25);
-    color: #22c55e; border-radius: 20px;
-    padding: 5px 12px; font-size: 12px; font-weight: 500; margin: 3px; gap: 5px;
-}
-.chip-amber {
-    display: inline-flex; align-items: center;
-    background: rgba(255,140,0,0.08); border: 1px solid rgba(255,140,0,0.25);
-    color: #ff8c00; border-radius: 20px;
-    padding: 5px 12px; font-size: 12px; font-weight: 500; margin: 3px; gap: 5px;
-}
+.chip-red   { display:inline-flex;align-items:center;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;margin:3px;gap:5px; }
+.chip-green { display:inline-flex;align-items:center;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);color:#22c55e;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;margin:3px;gap:5px; }
+.chip-amber { display:inline-flex;align-items:center;background:rgba(255,140,0,0.08);border:1px solid rgba(255,140,0,0.25);color:#ff8c00;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;margin:3px;gap:5px; }
 
 /* ── RISK TAGS ── */
-.risk-pill {
-    display: inline-block;
-    background: rgba(239,68,68,0.08);
-    border: 1px solid rgba(239,68,68,0.25);
-    color: #ef4444;
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 12px;
-    margin: 4px;
-    line-height: 1.5;
-}
+.risk-pill { display:inline-block;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:8px;padding:6px 12px;font-size:12px;margin:4px;line-height:1.5; }
 
-/* ── NEWS / RAG CARDS ── */
-.tt-news-card {
-    background: #222836;
-    border: 1px solid #2d3548;
-    border-left: 3px solid #ff8c00;
-    border-radius: 12px;
-    padding: 20px 22px;
-    margin: 6px 0;
-}
-.tt-rag-card {
-    background: #222836;
-    border: 1px solid #2d3548;
-    border-left: 3px solid #6366f1;
-    border-radius: 12px;
-    padding: 20px 22px;
-    margin: 6px 0;
-}
+/* ── NEWS / RAG ── */
+.tt-news-card { background:#222836;border:1px solid #2d3548;border-left:3px solid #ff8c00;border-radius:12px;padding:20px 22px;margin:6px 0; }
+.tt-rag-card  { background:#222836;border:1px solid #2d3548;border-left:3px solid #6366f1;border-radius:12px;padding:20px 22px;margin:6px 0; }
 
-/* ── BEGINNER BOX ── */
-.tt-beginner {
-    background: linear-gradient(135deg, #1c2a1e 0%, #222836 100%);
-    border: 1px solid rgba(34,197,94,0.2);
-    border-radius: 12px;
-    padding: 20px 22px;
-    margin: 6px 0;
-}
+/* ── BEGINNER ── */
+.tt-beginner { background:linear-gradient(135deg,#1c2a1e 0%,#222836 100%);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:20px 22px;margin:6px 0; }
 
-/* ── SUGGESTION ITEMS ── */
-.tt-suggestion {
-    background: #222836;
-    border: 1px solid #2d3548;
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin: 4px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: border-color 0.15s;
-}
-.tt-suggestion:hover { border-color: #ff8c00; background: #252d3e; }
-.tt-sug-name   { font-size: 14px; color: #e2e8f0; font-weight: 500; }
-.tt-sug-ticker {
-    font-size: 11px; color: #ff8c00; font-weight: 600;
-    background: rgba(255,140,0,0.1); padding: 3px 8px; border-radius: 4px;
-}
+/* ── SUGGESTION ROWS ── */
+.tt-suggestion { background:#222836;border:1px solid #2d3548;border-radius:8px;padding:12px 16px;margin:4px 0;display:flex;justify-content:space-between;align-items:center;transition:border-color 0.15s; }
+.tt-suggestion:hover { border-color:#ff8c00;background:#252d3e; }
+.tt-sug-name   { font-size:14px;color:#e2e8f0;font-weight:500; }
+.tt-sug-ticker { font-size:11px;color:#ff8c00;font-weight:600;background:rgba(255,140,0,0.1);padding:3px 8px;border-radius:4px; }
 
 /* ── BADGE ── */
-.tt-badge {
-    display: inline-flex; align-items: center;
-    background: rgba(255,140,0,0.1);
-    border: 1px solid rgba(255,140,0,0.3);
-    color: #ff8c00; border-radius: 20px;
-    padding: 4px 12px; font-size: 12px; font-weight: 600; gap: 5px;
-}
+.tt-badge { display:inline-flex;align-items:center;background:rgba(255,140,0,0.1);border:1px solid rgba(255,140,0,0.3);color:#ff8c00;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;gap:5px; }
 
 /* ── GLOSSARY ── */
-.tt-gloss-card {
-    background: #222836;
-    border: 1px solid #2d3548;
-    border-radius: 10px;
-    padding: 16px 18px;
-    margin: 6px 0;
+.tt-gloss-card { background:#222836;border:1px solid #2d3548;border-radius:10px;padding:16px 18px;margin:6px 0; }
+.tt-gloss-word { font-size:13px;font-weight:700;color:#ff8c00;margin-bottom:4px; }
+.tt-gloss-def  { font-size:12px;color:#64748b;line-height:1.6; }
+
+/* ── TERMINAL / DATA-DENSE PANELS ── */
+.tt-panel {
+    background:#1c2230;
+    border:1px solid #2d3548;
+    border-radius:10px;
+    padding:16px 18px;
+    margin:6px 0;
 }
-.tt-gloss-word { font-size: 13px; font-weight: 700; color: #ff8c00; margin-bottom: 4px; }
-.tt-gloss-def  { font-size: 12px; color: #64748b; line-height: 1.6; }
+.tt-panel-head {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:12px;
+}
+.tt-panel-title {
+    font-size:10.5px; font-weight:700; color:#ff8c00;
+    text-transform:uppercase; letter-spacing:1.1px;
+}
+.tt-panel-sub { font-size:10.5px; color:#475569; font-family:'JetBrains Mono','Consolas',monospace; }
+
+/* Monospace numeric readouts, terminal-style */
+.tt-mono { font-family:'JetBrains Mono','Consolas',monospace; }
+.tt-num-grid {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+    gap:1px; background:#2d3548; border-radius:8px; overflow:hidden;
+}
+.tt-num-cell {
+    background:#1c2230; padding:12px 14px;
+}
+.tt-num-label { font-size:9.5px; color:#475569; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:5px; }
+.tt-num-value { font-size:16px; font-weight:700; color:#ffffff; font-family:'JetBrains Mono','Consolas',monospace; }
+.tt-num-tag   { font-size:10px; margin-top:4px; font-weight:600; }
+.tt-tag-good  { color:#22c55e; }
+.tt-tag-warn  { color:#ff8c00; }
+.tt-tag-bad   { color:#ef4444; }
+.tt-tag-neutral { color:#64748b; }
+
+/* Data table — peer comparison etc */
+.tt-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+.tt-table th {
+    text-align:right; padding:9px 12px;
+    color:#475569; font-weight:600; font-size:10px;
+    text-transform:uppercase; letter-spacing:0.6px;
+    border-bottom:1px solid #2d3548;
+}
+.tt-table th:first-child, .tt-table td:first-child { text-align:left; }
+.tt-table td {
+    text-align:right; padding:10px 12px;
+    color:#cbd5e1; font-family:'JetBrains Mono','Consolas',monospace;
+    border-bottom:1px solid #232a3a;
+}
+.tt-table tr.tt-subject-row td {
+    background:rgba(255,140,0,0.06);
+    color:#ffffff; font-weight:700;
+}
+.tt-table tr.tt-subject-row td:first-child { border-left:2px solid #ff8c00; }
+
+/* Disclaimer / methodology note */
+.tt-disclaimer {
+    background:rgba(99,102,241,0.05);
+    border:1px solid rgba(99,102,241,0.18);
+    border-radius:8px;
+    padding:10px 14px;
+    margin:10px 0 4px;
+    font-size:11.5px;
+    color:#8b93a8;
+    line-height:1.55;
+    display:flex; gap:8px; align-items:flex-start;
+}
+.tt-disclaimer-icon { flex-shrink:0; font-size:13px; }
+
+/* Tab-style sub-navigation within analysis page */
+.tt-subtabs { display:flex; gap:4px; margin:18px 0 4px; flex-wrap:wrap; }
 
 /* ── DIVIDER ── */
-.tt-divider { border: none; border-top: 1px solid #2d3548; margin: 24px 0; }
+.tt-divider { border:none;border-top:1px solid #2d3548;margin:24px 0; }
 
 /* ── INPUTS ── */
 .stTextInput input {
-    background: #222836 !important;
-    border: 1.5px solid #2d3548 !important;
-    border-radius: 10px !important;
-    color: #ffffff !important;
-    font-size: 14px !important;
-    padding: 13px 18px !important;
+    background:#222836 !important;
+    border:1.5px solid #2d3548 !important;
+    border-radius:10px !important;
+    color:#ffffff !important;
+    font-size:14px !important;
+    padding:13px 18px !important;
 }
-.stTextInput input:focus {
-    border-color: #ff8c00 !important;
-    box-shadow: 0 0 0 3px rgba(255,140,0,0.08) !important;
-}
-.stTextInput input::placeholder { color: #475569 !important; }
+.stTextInput input:focus { border-color:#ff8c00 !important; box-shadow:0 0 0 3px rgba(255,140,0,0.08) !important; }
+.stTextInput input::placeholder { color:#475569 !important; }
 
 /* Selectbox */
-div[data-baseweb="select"] > div {
-    background: #222836 !important;
-    border: 1.5px solid #2d3548 !important;
-    border-radius: 10px !important;
-    color: #ffffff !important;
-}
-div[data-baseweb="popover"] { background: #222836 !important; border: 1px solid #2d3548 !important; }
+div[data-baseweb="select"] > div { background:#222836 !important;border:1.5px solid #2d3548 !important;border-radius:10px !important;color:#ffffff !important; }
+div[data-baseweb="popover"] { background:#222836 !important;border:1px solid #2d3548 !important; }
 
-/* ── BUTTONS (global default) ── */
+/* ── BUTTONS ── */
 .stButton button {
-    background: #222836 !important;
-    color: #94a3b8 !important;
-    border: 1px solid #2d3548 !important;
-    border-radius: 8px !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    transition: all 0.15s !important;
+    background:#222836 !important;
+    color:#94a3b8 !important;
+    border:1px solid #2d3548 !important;
+    border-radius:8px !important;
+    font-size:13px !important;
+    font-weight:500 !important;
+    transition:all 0.15s !important;
 }
-.stButton button:hover {
-    border-color: #ff8c00 !important;
-    color: #ff8c00 !important;
-    background: #252d3e !important;
-}
+.stButton button:hover { border-color:#ff8c00 !important;color:#ff8c00 !important;background:#252d3e !important; }
 
-/* Primary CTA */
-div[data-testid="column"] .stButton.primary-btn button,
 .primary-cta button {
-    background: #ff8c00 !important;
-    color: #ffffff !important;
-    border: none !important;
-    font-weight: 700 !important;
+    background:#ff8c00 !important;
+    color:#ffffff !important;
+    border:none !important;
+    font-weight:700 !important;
+    font-size:14px !important;
 }
-.primary-cta button:hover {
-    background: #e67e00 !important;
-    color: #ffffff !important;
-}
+.primary-cta button:hover { background:#e67e00 !important; }
 
 /* Spinner */
-.stSpinner > div { border-top-color: #ff8c00 !important; }
+.stSpinner > div { border-top-color:#ff8c00 !important; }
 
-/* Plotly chart */
-.js-plotly-plot { border-radius: 12px; overflow: hidden; }
+/* Plotly */
+.js-plotly-plot { border-radius:12px;overflow:hidden; }
 
-/* Streamlit metric labels */
-[data-testid="stMetricValue"] { color: #ffffff !important; font-size: 18px !important; font-weight: 700 !important; }
-[data-testid="stMetricLabel"] { color: #475569 !important; font-size: 11px !important; }
+/* Streamlit metric */
+[data-testid="stMetricValue"] { color:#ffffff !important;font-size:18px !important;font-weight:700 !important; }
+[data-testid="stMetricLabel"] { color:#475569 !important;font-size:11px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -656,10 +600,6 @@ GLOSSARY = {
     "Moving Average":   "Average price over a period. MA50 = last 50 days. Price above MA200 = positive trend.",
     "Volatility":       "How much the price moves daily. Higher = more risk and potential reward.",
     "Dividend Yield":   "Annual dividend as % of stock price. Good for income-seeking investors.",
-    "Promoter Holding": "% held by founders/promoters. Higher = management aligned with shareholders.",
-    "NPA":              "Non-Performing Asset — loans where repayment has stopped. High NPA = bad sign for banks.",
-    "EBITDA":           "Earnings before interest, tax, depreciation and amortisation. Measures operating profit.",
-    "PEG Ratio":        "P/E ratio divided by earnings growth. Below 1 = potentially undervalued for its growth rate.",
     "Bull Market":      "Rising market — prices going up over a sustained period.",
     "Bear Market":      "Falling market — prices going down over a sustained period.",
     "NSE":              "National Stock Exchange — India's largest exchange by trading volume.",
@@ -680,10 +620,22 @@ POPULAR = {
     "Zomato":              "ZOMATO.NS",
 }
 
+# Tickers shown in the strip
+STRIP_TICKERS = {
+    "RELIANCE": "RELIANCE.NS",
+    "TCS":      "TCS.NS",
+    "INFY":     "INFY.NS",
+    "HDFC BK":  "HDFCBANK.NS",
+    "NIFTY50":  "^NSEI",
+    "SENSEX":   "^BSESN",
+    "NVIDIA":   "NVDA",
+    "APPLE":    "AAPL",
+    "TESLA":    "TSLA",
+}
+
 # ── SESSION STATE ─────────────────────────────────────────────────────────────
 for k, v in {
     "knowledge_level":       None,
-    "lang":                  "en",
     "request_count":         0,
     "last_request_time":     0.0,
     "selected_ticker":       "",
@@ -717,8 +669,8 @@ def sanitise_ticker(raw: str):
         return None
     return cleaned
 
-COOLDOWN    = 20
-MAX_REQ     = 15
+COOLDOWN = 20
+MAX_REQ  = 15
 
 def rate_ok() -> bool:
     elapsed = time.time() - st.session_state.last_request_time
@@ -730,73 +682,106 @@ def rate_ok() -> bool:
         return False
     return True
 
+# ── LIVE TICKER STRIP ─────────────────────────────────────────────────────────
+@st.cache_data(ttl=45, show_spinner=False)
+def fetch_strip_prices() -> list[dict]:
+    """
+    Fetch latest prices for strip tickers.
+
+    Uses individual yf.Ticker().history() calls instead of a single batch
+    yf.download() — batch calls covering a mixed set of equities + indices
+    are more prone to outright failing on shared/cloud IPs (Yahoo rate-limits
+    these harder), and a single failure in a batch call can take the whole
+    strip down. Per-ticker calls let partial failures degrade gracefully
+    instead of blanking the entire strip.
+    """
+    import yfinance as yf
+
+    results = []
+    for label, sym in STRIP_TICKERS.items():
+        try:
+            hist = yf.Ticker(sym).history(period="5d", interval="1d")
+            if hist is None or hist.empty or "Close" not in hist.columns:
+                continue
+            closes = hist["Close"].dropna()
+            if len(closes) < 2:
+                continue
+
+            prev = float(closes.iloc[-2])
+            curr = float(closes.iloc[-1])
+            if prev == 0:
+                continue
+            chg = ((curr - prev) / prev) * 100
+
+            is_index = sym.startswith("^")
+            is_in    = sym.endswith((".NS", ".BO"))
+            cur = "" if is_index else ("₹" if is_in else "$")
+
+            results.append({
+                "label": label,
+                "price": f"{cur}{curr:,.2f}" if cur else f"{curr:,.0f}",
+                "chg":   chg,
+            })
+        except Exception:
+            continue
+
+    return results
+
+def build_strip_html(items: list[dict]) -> str:
+    if not items:
+        return ""
+    inner = ""
+    for it in items:
+        chg    = it["chg"]
+        cls    = "tt-strip-up" if chg >= 0 else "tt-strip-down"
+        arrow  = "▲" if chg >= 0 else "▼"
+        inner += (
+            f'<span class="tt-strip-item">'
+            f'<span class="tt-strip-name">{it["label"]}</span>'
+            f'<span class="tt-strip-price">{it["price"]}</span>'
+            f'<span class="{cls}">{arrow} {abs(chg):.2f}%</span>'
+            f'</span>'
+        )
+    # duplicate for seamless loop
+    doubled = inner + inner
+    return f'<div class="tt-strip"><div class="tt-strip-inner">{doubled}</div></div>'
+
 vectorstore = load_vectorstore()
 
 # ── NAVBAR ────────────────────────────────────────────────────────────────────
-lang_btn = "🇮🇳 हिंदी" if st.session_state.lang == "en" else "🇬🇧 English"
-nb1, nb2 = st.columns([9, 1])
-with nb1:
-    st.markdown(f"""
-    <div class="tt-navbar">
-        <div class="tt-logo">
-            <span class="tt-logo-dot"></span>
-            StockAI
-        </div>
-        <div class="tt-nav-right">
-            <span class="tt-nav-tag">{t('nav_tag')}</span>
-            <span class="tt-not-advice">{t('not_advice')}</span>
-        </div>
-    </div>""", unsafe_allow_html=True)
-with nb2:
-    st.markdown("<div style='margin-top:10px;'>", unsafe_allow_html=True)
-    if st.button(lang_btn, key="lang_toggle"):
-        st.session_state.lang = "hi" if st.session_state.lang == "en" else "en"
-        st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown(f"""
+<div class="tt-navbar">
+    <div class="tt-logo">
+        <span class="tt-logo-dot"></span>
+        StockAI
+    </div>
+    <div class="tt-nav-right">
+        <span class="tt-nav-tag">{t('nav_tag')}</span>
+        <span class="tt-not-advice">{t('not_advice')}</span>
+    </div>
+</div>""", unsafe_allow_html=True)
 
-# ── TICKER STRIP — live auto-refreshing ───────────────────────────────────────
+# ── TICKER STRIP ──────────────────────────────────────────────────────────────
 try:
     from streamlit_autorefresh import st_autorefresh
-    st_autorefresh(interval=60_000, limit=None, key="ticker_refresh")
+    st_autorefresh(interval=45_000, limit=None, key="ticker_refresh")
 except ImportError:
     pass
 
-try:
-    from src.ticker_strip import fetch_strip_data, build_strip_html
-
-    @st.cache_data(ttl=55, show_spinner=False)
-    def get_strip_data():
-        return fetch_strip_data()
-
-    strip_stocks = get_strip_data()
-    st.markdown(build_strip_html(strip_stocks), unsafe_allow_html=True)
-except Exception:
-    # Fallback static strip if module not available
-    st.markdown("""
-    <div style="background:#151a27;border-bottom:1px solid #2d3548;padding:8px 32px;
-                margin:0 -2rem 0 -2rem;overflow:hidden;white-space:nowrap;
-                font-size:12px;color:#94a3b8;">
-        <span style="margin-right:32px;">
-            <span style="font-weight:500;">RELIANCE</span>
-            <span style="color:#ffffff;font-weight:600;margin:0 4px;">₹—</span>
-        </span>
-        <span style="margin-right:32px;">
-            <span style="font-weight:500;">TCS</span>
-            <span style="color:#ffffff;font-weight:600;margin:0 4px;">₹—</span>
-        </span>
-        <span style="margin-right:32px;">
-            <span style="font-weight:500;">NIFTY 50</span>
-            <span style="color:#ffffff;font-weight:600;margin:0 4px;">—</span>
-        </span>
-        <span style="margin-right:32px;">
-            <span style="font-weight:500;">SENSEX</span>
-            <span style="color:#ffffff;font-weight:600;margin:0 4px;">—</span>
-        </span>
-        <span style="margin-right:32px;">
-            <span style="font-weight:500;">NVIDIA</span>
-            <span style="color:#ffffff;font-weight:600;margin:0 4px;">$—</span>
-        </span>
-    </div>""", unsafe_allow_html=True)
+strip_data = fetch_strip_prices()
+if strip_data:
+    st.markdown(build_strip_html(strip_data), unsafe_allow_html=True)
+else:
+    # Visible fallback instead of a silent blank gap when the market
+    # data provider is briefly unreachable for every symbol.
+    st.markdown(
+        '<div class="tt-strip"><div class="tt-strip-inner">'
+        '<span class="tt-strip-item">'
+        '<span class="tt-strip-name" style="color:#475569;">'
+        'Market data temporarily unavailable — refreshing automatically'
+        '</span></span></div></div>',
+        unsafe_allow_html=True,
+    )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE A — KNOWLEDGE LEVEL SELECTOR
@@ -896,13 +881,11 @@ else:
 
         _, mid, _ = st.columns([1, 4, 1])
         with mid:
-            # ── Live search box
             query = st.text_input(
                 "", placeholder="🔍  Search — Reliance, Apple, HDFC Bank, Tesla...",
                 label_visibility="collapsed", key="main_search",
             )
 
-            # ── Exchange + company selector
             st.markdown(
                 "<div style='text-align:center;color:#475569;font-size:12px;"
                 "margin:14px 0 6px;'>— or browse by exchange —</div>",
@@ -912,9 +895,9 @@ else:
             sel_exc = st.selectbox("", exc_options, label_visibility="collapsed", key="exc_sel")
 
             if sel_exc != "— Select exchange —":
-                cos       = COMPANIES_BY_EXCHANGE[sel_exc]
-                co_opts   = ["— Choose a company —"] + list(cos.keys())
-                sel_co    = st.selectbox("", co_opts, label_visibility="collapsed", key="co_sel")
+                cos    = COMPANIES_BY_EXCHANGE[sel_exc]
+                co_opts = ["— Choose a company —"] + list(cos.keys())
+                sel_co  = st.selectbox("", co_opts, label_visibility="collapsed", key="co_sel")
                 if sel_co not in ("— Choose a company —", ""):
                     ticker = cos[sel_co]
                     st.caption(f"Symbol: `{ticker}`")
@@ -927,7 +910,6 @@ else:
                             st.rerun()
                     st.markdown('</div>', unsafe_allow_html=True)
             else:
-                # Manual ticker entry (shown only when no exchange selected)
                 st.markdown(
                     f"<div style='color:#475569;font-size:12px;margin:10px 0 4px;'>{t('or_ticker')}</div>",
                     unsafe_allow_html=True,
@@ -950,7 +932,7 @@ else:
                                 st.rerun()
                         st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Live search suggestions
+        # Live search suggestions
         if query and len(query) >= 2:
             matches = {n: tk for n, tk in ALL_COMPANIES.items() if query.lower() in n.lower()}
             _, mc, _ = st.columns([1, 4, 1])
@@ -978,7 +960,7 @@ else:
                         unsafe_allow_html=True,
                     )
 
-        # ── Popular stocks
+        # Popular stocks
         if not query:
             st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
             st.markdown(f"<div class='tt-section-label'>{t('popular')}</div>", unsafe_allow_html=True)
@@ -992,15 +974,15 @@ else:
                             st.session_state.current_page          = "analysis"
                             st.rerun()
 
-            # ── How it works
+            # How it works
             st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
             st.markdown(f"<div class='tt-section-label'>{t('how_it_works')}</div>", unsafe_allow_html=True)
             hw1, hw2, hw3, hw4 = st.columns(4)
             for col, icon, title, desc in [
-                (hw1, "🔍", "Search", "Type any company name from NSE, BSE or NYSE"),
-                (hw2, "📊", "Live Data", "Real-time financial data fetched instantly via yfinance"),
-                (hw3, "🤖", "AI Analysis", "Groq's Llama 3 generates a personalised research brief"),
-                (hw4, "📋", "Your Report", "Valuation, financial health, risks and news — in one view"),
+                (hw1, "🔍", "Search",      "Type any company from NSE, BSE or NYSE"),
+                (hw2, "📊", "Live Data",   "Real-time financial data via yfinance"),
+                (hw3, "🤖", "AI Analysis", "Groq's Llama 3 writes a personalised brief"),
+                (hw4, "📋", "Your Report", "Valuation, health, risks and news in one view"),
             ]:
                 with col:
                     st.markdown(f"""
@@ -1059,10 +1041,9 @@ else:
         with st.spinner(t("generating")):
             try:
                 from src.llm import generate_stock_brief
-                lang_str = "हिंदी" if st.session_state.lang == "hi" else "English"
-                brief    = generate_stock_brief(
+                brief = generate_stock_brief(
                     data, signals, ticker, vectorstore,
-                    lang=lang_str, level=level,
+                    lang="English", level=level,
                 )
                 st.session_state.request_count    += 1
                 st.session_state.last_request_time = time.time()
@@ -1116,21 +1097,15 @@ else:
             tl     = str(brief.get("traffic_light", "")).upper()
             tl_why = brief.get("traffic_light_reason", "")
             if tl == "GREEN":
-                st.markdown(f'<div class="tl-green"><div class="tl-dot-green"></div>'
-                            f'<div class="tl-text">🟢 <b>Looks stable</b> — {tl_why}</div></div>',
-                            unsafe_allow_html=True)
+                st.markdown(f'<div class="tl-green"><div class="tl-dot-green"></div><div class="tl-text">🟢 <b>Looks stable</b> — {tl_why}</div></div>', unsafe_allow_html=True)
             elif tl == "RED":
-                st.markdown(f'<div class="tl-red"><div class="tl-dot-red"></div>'
-                            f'<div class="tl-text">🔴 <b>Concerning signals</b> — {tl_why}</div></div>',
-                            unsafe_allow_html=True)
+                st.markdown(f'<div class="tl-red"><div class="tl-dot-red"></div><div class="tl-text">🔴 <b>Concerning signals</b> — {tl_why}</div></div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div class="tl-yellow"><div class="tl-dot-yellow"></div>'
-                            f'<div class="tl-text">🟡 <b>Mixed signals</b> — {tl_why}</div></div>',
-                            unsafe_allow_html=True)
+                st.markdown(f'<div class="tl-yellow"><div class="tl-dot-yellow"></div><div class="tl-text">🟡 <b>Mixed signals</b> — {tl_why}</div></div>', unsafe_allow_html=True)
 
         # ── KEY METRICS ───────────────────────────────────────────────────────
         st.markdown(f"<div class='tt-section-label'>{t('key_metrics')}</div>", unsafe_allow_html=True)
-        m = brief["key_metrics"]
+        m  = brief["key_metrics"]
         mc = st.columns(6)
         for col, (label, val) in zip(mc, [
             ("P/E Ratio",      m.get("pe_ratio",      "N/A")),
@@ -1147,7 +1122,7 @@ else:
                     <div class="tt-metric-value">{val}</div>
                 </div>""", unsafe_allow_html=True)
 
-        # Extended metrics row (Expert/Intermediate)
+        # Extended metrics (Expert/Intermediate)
         try:
             from src.utils import format_number, format_price as fp
             ext = []
@@ -1201,11 +1176,8 @@ else:
                 xaxis=dict(gridcolor="#2d3548", showgrid=True, zeroline=False),
                 yaxis=dict(gridcolor="#2d3548", showgrid=True, zeroline=False, tickprefix=currency),
                 hovermode="x unified",
-                legend=dict(
-                    orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="right", x=1, bgcolor="rgba(0,0,0,0)",
-                    font=dict(size=11),
-                ),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                            xanchor="right", x=1, bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -1218,14 +1190,203 @@ else:
 
         st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
 
+        # ── TECHNICAL INDICATORS ─────────────────────────────────────────────
+        try:
+            from src.analytics import technical_snapshot
+            tech = technical_snapshot(price_hist)
+        except Exception:
+            tech = {}
+
+        if tech:
+            st.markdown("<div class='tt-section-label'>TECHNICAL INDICATORS</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
+                "<span>These describe <b>past</b> price action using standard textbook formulas. "
+                "There is no reliable evidence that technical indicators predict future returns — "
+                "treat these as context, not signals to act on.</span></div>",
+                unsafe_allow_html=True,
+            )
+
+            tone_class = {"good": "tt-tag-good", "warn": "tt-tag-warn", "bad": "tt-tag-bad", "neutral": "tt-tag-neutral"}
+            cells = []
+            if "rsi" in tech:
+                r = tech["rsi"]
+                cells.append(("RSI (14)", f"{r['value']}", r["label"], tone_class.get(r["tone"], "tt-tag-neutral")))
+            if "macd" in tech:
+                mc_ = tech["macd"]
+                cells.append(("MACD", f"{mc_['macd']}", mc_["label"], tone_class.get(mc_["tone"], "tt-tag-neutral")))
+            if "macd" in tech:
+                mc_ = tech["macd"]
+                cells.append(("Signal Line", f"{mc_['signal']}", f"Histogram {mc_['histogram']:+.2f}", "tt-tag-neutral"))
+            if "bollinger" in tech:
+                bb_ = tech["bollinger"]
+                cells.append((f"Bollinger ({currency})",
+                              f"{bb_['lower']:.0f} — {bb_['upper']:.0f}",
+                              bb_["label"], tone_class.get(bb_["tone"], "tt-tag-neutral")))
+
+            grid_html = "<div class='tt-num-grid'>"
+            for label, value, tag, tone_cls in cells:
+                grid_html += (
+                    f"<div class='tt-num-cell'>"
+                    f"<div class='tt-num-label'>{label}</div>"
+                    f"<div class='tt-num-value'>{value}</div>"
+                    f"<div class='tt-num-tag {tone_cls}'>{tag}</div>"
+                    f"</div>"
+                )
+            grid_html += "</div>"
+            st.markdown(f"<div class='tt-panel'>{grid_html}</div>", unsafe_allow_html=True)
+
+            st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
+
+        # ── PEER / SECTOR COMPARISON ─────────────────────────────────────────
+        try:
+            from src.analytics import fetch_peer_metrics
+            peer_data = fetch_peer_metrics(ticker)
+        except Exception:
+            peer_data = {}
+
+        if peer_data and peer_data.get("rows"):
+            st.markdown("<div class='tt-section-label'>PEER COMPARISON</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
+                "<span>Ratios fetched live for this stock and its closest listed peers. "
+                "Useful for relative context — a high P/E only means something next to similar companies.</span></div>",
+                unsafe_allow_html=True,
+            )
+
+            rows_html = ""
+            for row in peer_data["rows"]:
+                cls = "tt-subject-row" if row["is_subject"] else ""
+                pe_v     = f"{row['pe']}x" if row["pe"] is not None else "—"
+                pb_v     = f"{row['pb']}x" if row["pb"] is not None else "—"
+                roe_v    = f"{row['roe']}%" if row["roe"] is not None else "—"
+                margin_v = f"{row['margin']}%" if row["margin"] is not None else "—"
+                mcap_v   = "—"
+                if row["mcap"]:
+                    mc_val = row["mcap"]
+                    if mc_val >= 1e12:
+                        mcap_v = f"{mc_val/1e12:.2f}T"
+                    elif mc_val >= 1e9:
+                        mcap_v = f"{mc_val/1e9:.1f}B"
+                    else:
+                        mcap_v = f"{mc_val/1e6:.0f}M"
+                rows_html += (
+                    f"<tr class='{cls}'>"
+                    f"<td>{row['name']}</td>"
+                    f"<td>{pe_v}</td><td>{pb_v}</td><td>{roe_v}</td>"
+                    f"<td>{margin_v}</td><td>{mcap_v}</td>"
+                    f"</tr>"
+                )
+
+            table_html = f"""
+            <div class="tt-panel">
+                <table class="tt-table">
+                    <thead><tr>
+                        <th>Company</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Margin</th><th>Mkt Cap</th>
+                    </tr></thead>
+                    <tbody>{rows_html}</tbody>
+                </table>
+            </div>"""
+            st.markdown(table_html, unsafe_allow_html=True)
+
+            st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
+
+        # ── HISTORICAL FINANCIALS TREND ──────────────────────────────────────
+        try:
+            from src.analytics import fetch_historical_financials
+            fin_trend = fetch_historical_financials(ticker)
+        except Exception:
+            fin_trend = {}
+
+        if fin_trend and fin_trend.get("years"):
+            st.markdown("<div class='tt-section-label'>HISTORICAL FINANCIALS</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
+                "<span>Annual figures as reported, most recent years available. "
+                "Shows trend direction only — not adjusted for one-off items or accounting changes.</span></div>",
+                unsafe_allow_html=True,
+            )
+
+            fin_fig = go.Figure()
+            years = fin_trend["years"]
+            if fin_trend.get("revenue"):
+                fin_fig.add_trace(go.Bar(
+                    x=years, y=fin_trend["revenue"], name="Revenue",
+                    marker_color="#6366f1", opacity=0.85,
+                ))
+            if fin_trend.get("net_income"):
+                fin_fig.add_trace(go.Bar(
+                    x=years, y=fin_trend["net_income"], name="Net Income",
+                    marker_color="#ff8c00", opacity=0.85,
+                ))
+            fin_fig.update_layout(
+                barmode="group",
+                paper_bgcolor="#222836", plot_bgcolor="#222836",
+                font=dict(color="#94a3b8", size=11),
+                height=300,
+                margin=dict(l=12, r=12, t=12, b=12),
+                xaxis=dict(gridcolor="#2d3548", showgrid=False),
+                yaxis=dict(gridcolor="#2d3548", showgrid=True, zeroline=False),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                            xanchor="right", x=1, bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
+            )
+            st.plotly_chart(fin_fig, use_container_width=True)
+
+            if fin_trend.get("net_margin"):
+                margin_cells = "".join(
+                    f"<div class='tt-num-cell'><div class='tt-num-label'>{y} margin</div>"
+                    f"<div class='tt-num-value' style='font-size:14px;'>{m}%</div></div>"
+                    for y, m in zip(years, fin_trend["net_margin"]) if m is not None
+                )
+                st.markdown(f"<div class='tt-num-grid'>{margin_cells}</div>", unsafe_allow_html=True)
+
+            st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
+
+        # ── CORRELATION & VOLATILITY VS INDEX ────────────────────────────────
+        try:
+            from src.analytics import correlation_volatility
+            corr_data = correlation_volatility(ticker, price_hist=price_hist)
+        except Exception:
+            corr_data = {}
+
+        if corr_data:
+            st.markdown("<div class='tt-section-label'>CORRELATION & VOLATILITY</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
+                f"<span>Measures how this stock's daily moves have related to the "
+                f"{corr_data['benchmark_name']} over the past year. Past co-movement, not a forecast.</span></div>",
+                unsafe_allow_html=True,
+            )
+
+            cv_cells = [
+                ("Correlation", f"{corr_data['correlation']:.2f}", corr_data["correlation_label"], "tt-tag-neutral"),
+                ("Beta (est.)", f"{corr_data['beta_estimate']:.2f}" if corr_data.get("beta_estimate") is not None else "—",
+                 "vs " + corr_data["benchmark_name"], "tt-tag-neutral"),
+                ("Stock Volatility", f"{corr_data['stock_volatility']}%", "annualised", "tt-tag-warn" if corr_data["stock_volatility"] > corr_data["bench_volatility"] else "tt-tag-good"),
+                (f"{corr_data['benchmark_name']} Volatility", f"{corr_data['bench_volatility']}%", "annualised", "tt-tag-neutral"),
+            ]
+            grid2 = "<div class='tt-num-grid'>"
+            for label, value, tag, tone_cls in cv_cells:
+                grid2 += (
+                    f"<div class='tt-num-cell'>"
+                    f"<div class='tt-num-label'>{label}</div>"
+                    f"<div class='tt-num-value'>{value}</div>"
+                    f"<div class='tt-num-tag {tone_cls}'>{tag}</div>"
+                    f"</div>"
+                )
+            grid2 += "</div>"
+            st.markdown(f"<div class='tt-panel'>{grid2}</div>", unsafe_allow_html=True)
+
+            st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
+
         # ── SIGNALS ───────────────────────────────────────────────────────────
         st.markdown(f"<div class='tt-section-label'>{t('signals')}</div>", unsafe_allow_html=True)
         sig_html = ""
         for s in signals:
             if "WARNING" in s:
                 sig_html += f'<span class="chip-red">⚠ {s}</span>'
-            elif any(k in s for k in ("STRONG", "HIGH ROE", "VERY LOW debt", "ANALYST CONSENSUS: BUY",
-                                       "Pays dividend", "HIGH dividend")):
+            elif any(k in s for k in ("STRONG", "HIGH ROE", "VERY LOW debt",
+                                       "ANALYST CONSENSUS: BUY", "Pays dividend", "HIGH dividend")):
                 sig_html += f'<span class="chip-green">✓ {s}</span>'
             else:
                 sig_html += f'<span class="chip-amber">ℹ {s}</span>'
@@ -1235,28 +1396,28 @@ else:
 
         # ── AI BRIEF ──────────────────────────────────────────────────────────
         st.markdown(f"<div class='tt-section-label'>{t('ai_brief')}</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>🤖</span>"
+            "<span>Generated by an LLM from the data above. It can summarise fundamentals and "
+            "phrase them clearly — it has no special ability to forecast price moves, and isn't "
+            "a buy/sell recommendation.</span></div>",
+            unsafe_allow_html=True,
+        )
 
         left, right = st.columns(2)
         with left:
-            st.markdown(f"""
-            <div class="tt-card">
-                <div class="tt-card-title">{t('analyst_summary')}</div>
-                <div class="tt-card-text">{brief.get('analyst_summary','N/A')}</div>
-            </div>""", unsafe_allow_html=True)
+            for card_t, key in [
+                (t("analyst_summary"), "analyst_summary"),
+                (t("valuation"),       "valuation_commentary"),
+                (t("growth"),          "growth_outlook"),
+            ]:
+                st.markdown(f"""
+                <div class="tt-card">
+                    <div class="tt-card-title">{card_t}</div>
+                    <div class="tt-card-text">{brief.get(key,'N/A')}</div>
+                </div>""", unsafe_allow_html=True)
 
-            st.markdown(f"""
-            <div class="tt-card">
-                <div class="tt-card-title">{t('valuation')}</div>
-                <div class="tt-card-text">{brief.get('valuation_commentary','N/A')}</div>
-            </div>""", unsafe_allow_html=True)
-
-            st.markdown(f"""
-            <div class="tt-card">
-                <div class="tt-card-title">{t('growth')}</div>
-                <div class="tt-card-text">{brief.get('growth_outlook','N/A')}</div>
-            </div>""", unsafe_allow_html=True)
-
-            risks     = brief.get("risk_flags", [])
+            risks      = brief.get("risk_flags", [])
             risks_html = "".join(f'<span class="risk-pill">⚠ {r}</span>' for r in risks) if risks else \
                          '<span style="color:#475569;font-size:13px;">No specific risks flagged.</span>'
             st.markdown(f"""
@@ -1266,23 +1427,16 @@ else:
             </div>""", unsafe_allow_html=True)
 
         with right:
-            st.markdown(f"""
-            <div class="tt-card">
-                <div class="tt-card-title">{t('health')}</div>
-                <div class="tt-card-text">{brief.get('financial_health','N/A')}</div>
-            </div>""", unsafe_allow_html=True)
-
-            st.markdown(f"""
-            <div class="tt-card">
-                <div class="tt-card-title">{t('profile')}</div>
-                <div class="tt-card-text">{brief.get('investor_profile','N/A')}</div>
-            </div>""", unsafe_allow_html=True)
-
-            st.markdown(f"""
-            <div class="tt-card">
-                <div class="tt-card-title">{t('watch')}</div>
-                <div class="tt-card-text">{brief.get('watch_out_for','N/A')}</div>
-            </div>""", unsafe_allow_html=True)
+            for card_t, key in [
+                (t("health"),  "financial_health"),
+                (t("profile"), "investor_profile"),
+                (t("watch"),   "watch_out_for"),
+            ]:
+                st.markdown(f"""
+                <div class="tt-card">
+                    <div class="tt-card-title">{card_t}</div>
+                    <div class="tt-card-text">{brief.get(key,'N/A')}</div>
+                </div>""", unsafe_allow_html=True)
 
         st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
 
@@ -1307,24 +1461,14 @@ else:
         # ── BEGINNER EXPLAINER ────────────────────────────────────────────────
         if "Beginner" in level or "🌱" in level:
             st.markdown(f"<div class='tt-section-label'>{t('beginner_guide')}</div>", unsafe_allow_html=True)
-            if st.session_state.lang == "hi":
-                rows = [
-                    ("P/E Ratio",      "कंपनी की कमाई के लिए आप कितना पैसा दे रहे हैं। कम = संभवतः सस्ता।"),
-                    ("ROE",            "आपके ₹100 पर कंपनी ने कितना मुनाफा कमाया। 15% मतलब ₹100 पर ₹15 मुनाफा।"),
-                    ("Debt/Equity",    "कंपनी ने कितना कर्ज लिया है। ज्यादा कर्ज = ज्यादा जोखिम।"),
-                    ("Profit Margin",  "₹100 की बिक्री में से असल मुनाफा कितना। ज्यादा = बेहतर।"),
-                    ("Revenue Growth", "पिछले साल की तुलना में बिक्री कितनी बढ़ी।"),
-                    ("1Y Return",      "अगर आपने 1 साल पहले खरीदा होता तो कितना फायदा/नुकसान होता।"),
-                ]
-            else:
-                rows = [
-                    ("P/E Ratio",      "How much you pay for every ₹1 of company profit. Lower is generally cheaper."),
-                    ("ROE",            "If you gave ₹100, ROE shows how much profit the company made. 15% = ₹15 on your ₹100."),
-                    ("Debt/Equity",    "How much the company borrowed vs what it owns. Very high debt can be risky."),
-                    ("Profit Margin",  "Of every ₹100 in sales, how much is actual profit. Higher is better."),
-                    ("Revenue Growth", "How much sales grew vs last year. 15% growth means they sold 15% more."),
-                    ("1Y Return",      "If you had bought one year ago, this is what you would have gained or lost."),
-                ]
+            rows = [
+                ("P/E Ratio",      "How much you pay for every ₹1 of company profit. Lower is generally cheaper."),
+                ("ROE",            "If you gave ₹100, ROE shows how much profit the company made. 15% = ₹15 on your ₹100."),
+                ("Debt/Equity",    "How much the company borrowed vs what it owns. Very high debt can be risky."),
+                ("Profit Margin",  "Of every ₹100 in sales, how much is actual profit. Higher is better."),
+                ("Revenue Growth", "How much sales grew vs last year. 15% growth means they sold 15% more."),
+                ("1Y Return",      "If you had bought one year ago, this is what you would have gained or lost."),
+            ]
             rows_html = "".join(
                 f'<div style="margin-bottom:12px;">'
                 f'<span style="font-size:13px;font-weight:700;color:#ffffff;">{term}</span>'
