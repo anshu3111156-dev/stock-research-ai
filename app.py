@@ -17,8 +17,8 @@ except Exception as e:
 
 # ── PAGE CONFIG ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="StockAI — Equity Research",
-    page_icon="📈",
+    page_title="Clariva — Equity Research",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -74,6 +74,76 @@ STRINGS = {
 def t(key, **kwargs):
     s = STRINGS.get(key, key)
     return s.format(**kwargs) if kwargs else s
+
+
+# ── LEVEL-AWARE EXPLAINER HELPERS ─────────────────────────────────────────────
+# These control how much of the Technical Indicators / Peer Comparison /
+# Correlation sections render at each level, and inject a plain-language
+# explainer line for lower levels — without removing the underlying data,
+# per the "show but simplify" requirement for Beginner.
+
+def is_beginner(level: str) -> bool:
+    return "Beginner" in level or "🌱" in level
+
+def is_learner(level: str) -> bool:
+    return "Learner" in level or "📈" in level
+
+def is_expert(level: str) -> bool:
+    return "Expert" in level or "🏦" in level
+
+def level_rank(level: str) -> int:
+    """0=Beginner, 1=Learner, 2=Intermediate, 3=Expert — for 'show N items' gating."""
+    if is_beginner(level):
+        return 0
+    if is_learner(level):
+        return 1
+    if is_expert(level):
+        return 3
+    return 2  # Intermediate / unrecognised default
+
+# Max number of extended-metric chips, peer-table rows-of-detail, etc. shown
+# per level. Beginner sees the simplest, most essential subset; Expert sees
+# everything. This is intentionally a count cap, not a content swap — same
+# underlying data source, fewer items surfaced at lower levels.
+MAX_EXTENDED_METRICS = {0: 2, 1: 3, 2: 5, 3: 99}
+MAX_SIGNALS_SHOWN     = {0: 4, 1: 6, 2: 10, 3: 99}
+MAX_PEER_COLUMNS      = {0: 3, 1: 4, 2: 5, 3: 5}  # company,P/E,P/B capped lowest; full table for higher levels
+
+PLAIN_EXPLAINERS = {
+    "technical": {
+        0: ("These are technical indicators traders use to study price patterns. "
+            "You don't need to understand the formulas — just know that they describe what the "
+            "price has been doing recently, not what it will do next."),
+        1: ("RSI, MACD and Bollinger Bands describe recent price momentum and how stretched the "
+            "price is versus its recent range. They're descriptive, not predictive."),
+        2: ("Standard momentum/volatility indicators (RSI, MACD, Bollinger Bands), shown here as "
+            "descriptive context on recent price action."),
+        3: ("Textbook technical readings (RSI-14, MACD, Bollinger Bands) for recent price action."),
+    },
+    "peers": {
+        0: ("This compares the company to a few similar companies in the same industry. "
+            "A number only means something next to others like it — e.g. a P/E of 30 sounds high, "
+            "but might be normal for that industry."),
+        1: ("Comparing key ratios against a few close industry peers gives context — "
+            "the same number can mean different things in different sectors."),
+        2: ("Ratios for this stock vs its closest listed peers, for relative valuation context."),
+        3: ("Peer set ratios (P/E, P/B, ROE, margin, market cap) for relative valuation benchmarking."),
+    },
+    "correlation": {
+        0: ("This shows how closely this stock's price moves track the overall market. "
+            "A high number means it usually goes up and down WITH the market; a low number means "
+            "it moves more on its own."),
+        1: ("Correlation and beta describe how this stock's moves have related to the broader "
+            "market index recently — useful context, not a forecast."),
+        2: ("Correlation, beta estimate, and annualised volatility vs the relevant benchmark index."),
+        3: ("Trailing correlation/beta vs benchmark, with annualised volatility — descriptive co-movement only."),
+    },
+}
+
+def plain_explainer(section: str, level: str) -> str:
+    rank = level_rank(level)
+    return PLAIN_EXPLAINERS.get(section, {}).get(rank, "")
+
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -411,6 +481,22 @@ section[data-testid="stMain"] > div { padding-top: 0 !important; }
     display:flex; gap:8px; align-items:flex-start;
 }
 .tt-disclaimer-icon { flex-shrink:0; font-size:13px; }
+
+/* Plain-language explainer for lower levels — visually distinct from the
+   methodology disclaimer (green-tinted = "here's what this means", vs the
+   indigo disclaimer above = "here's the methodology caveat") */
+.tt-plain-explain {
+    background:rgba(34,197,94,0.05);
+    border:1px solid rgba(34,197,94,0.18);
+    border-radius:8px;
+    padding:10px 14px;
+    margin:10px 0 4px;
+    font-size:12px;
+    color:#a8d8b9;
+    line-height:1.6;
+    display:flex; gap:8px; align-items:flex-start;
+}
+.tt-plain-explain-icon { flex-shrink:0; font-size:13px; }
 
 /* Tab-style sub-navigation within analysis page */
 .tt-subtabs { display:flex; gap:4px; margin:18px 0 4px; flex-wrap:wrap; }
@@ -753,7 +839,7 @@ st.markdown(f"""
 <div class="tt-navbar">
     <div class="tt-logo">
         <span class="tt-logo-dot"></span>
-        StockAI
+        Clariva
     </div>
     <div class="tt-nav-right">
         <span class="tt-nav-tag">{t('nav_tag')}</span>
@@ -772,8 +858,6 @@ strip_data = fetch_strip_prices()
 if strip_data:
     st.markdown(build_strip_html(strip_data), unsafe_allow_html=True)
 else:
-    # Visible fallback instead of a silent blank gap when the market
-    # data provider is briefly unreachable for every symbol.
     st.markdown(
         '<div class="tt-strip"><div class="tt-strip-inner">'
         '<span class="tt-strip-item">'
@@ -1037,7 +1121,10 @@ else:
                     st.error(t("fetch_error", name=company_name))
                 st.stop()
 
-        # Generate AI brief
+        # Generate AI brief — level now flows into BOTH the AI prompt depth
+        # (handled inside generate_stock_brief / src/llm.py's LEVEL_CONFIG)
+        # AND the no-AI fallback path below, so the level promise holds
+        # even when Groq is unavailable.
         with st.spinner(t("generating")):
             try:
                 from src.llm import generate_stock_brief
@@ -1051,7 +1138,7 @@ else:
                 st.warning(t("ai_warn"))
                 try:
                     from src.llm import _fallback_brief
-                    brief = _fallback_brief(data, signals, ticker)
+                    brief = _fallback_brief(data, signals, ticker, level=level)
                 except Exception:
                     brief = {
                         "company_name": company_name, "sector": "N/A",
@@ -1093,7 +1180,7 @@ else:
         </div>""", unsafe_allow_html=True)
 
         # ── TRAFFIC LIGHT (Beginner only) ─────────────────────────────────────
-        if "Beginner" in level or "🌱" in level:
+        if is_beginner(level):
             tl     = str(brief.get("traffic_light", "")).upper()
             tl_why = brief.get("traffic_light_reason", "")
             if tl == "GREEN":
@@ -1122,16 +1209,23 @@ else:
                     <div class="tt-metric-value">{val}</div>
                 </div>""", unsafe_allow_html=True)
 
-        # Extended metrics (Expert/Intermediate)
+        # Extended metrics row — count capped per level (Beginner sees the
+        # 2 most essential, Expert sees all available). Same data source,
+        # fewer items surfaced at lower levels, per the "different depth of
+        # content" requirement.
         try:
             from src.utils import format_number, format_price as fp
             ext = []
             if data.get("forward_pe")     not in (None, "N/A"): ext.append(("Forward P/E",   f"{float(data['forward_pe']):.1f}x"))
-            if data.get("ev_to_ebitda")   not in (None, "N/A"): ext.append(("EV/EBITDA",     f"{float(data['ev_to_ebitda']):.1f}x"))
-            if data.get("free_cashflow")  not in (None, "N/A"): ext.append(("Free Cash Flow", format_number(data["free_cashflow"], ticker)))
-            if data.get("beta")           not in (None, "N/A"): ext.append(("Beta",           f"{float(data['beta']):.2f}"))
             if data.get("target_price")   not in (None, "N/A"): ext.append(("Analyst Target", fp(data["target_price"], ticker)))
+            if data.get("ev_to_ebitda")   not in (None, "N/A"): ext.append(("EV/EBITDA",     f"{float(data['ev_to_ebitda']):.1f}x"))
+            if data.get("beta")           not in (None, "N/A"): ext.append(("Beta",           f"{float(data['beta']):.2f}"))
+            if data.get("free_cashflow")  not in (None, "N/A"): ext.append(("Free Cash Flow", format_number(data["free_cashflow"], ticker)))
             if data.get("recommendation") not in (None, "N/A"): ext.append(("Analyst View",   str(data["recommendation"]).upper()))
+
+            cap = MAX_EXTENDED_METRICS.get(level_rank(level), 99)
+            ext = ext[:cap]
+
             if ext:
                 ecols = st.columns(len(ext))
                 for col, (lbl, v) in zip(ecols, ext):
@@ -1154,18 +1248,23 @@ else:
                 line=dict(color="#ff8c00", width=2),
                 fill="tozeroy", fillcolor="rgba(255,140,0,0.05)",
             ))
+            # MA50/MA200 overlays are genuinely useful at every level (they're
+            # visual, not jargon-heavy), but we only label them with raw
+            # "MA50"/"MA200" for Learner+ — Beginner gets a plain label.
             if history:
                 n = len(price_data["dates"])
+                ma50_label  = "MA50"  if not is_beginner(level) else "50-day average"
+                ma200_label = "MA200" if not is_beginner(level) else "200-day average"
                 fig.add_trace(go.Scatter(
                     x=price_data["dates"][-50:],
                     y=[history["ma50"]] * min(50, n),
-                    mode="lines", name="MA50",
+                    mode="lines", name=ma50_label,
                     line=dict(color="#6366f1", width=1.5, dash="dash"),
                 ))
                 fig.add_trace(go.Scatter(
                     x=price_data["dates"],
                     y=[history["ma200"]] * n,
-                    mode="lines", name="MA200",
+                    mode="lines", name=ma200_label,
                     line=dict(color="#ef4444", width=1.5, dash="dash"),
                 ))
             fig.update_layout(
@@ -1191,6 +1290,9 @@ else:
         st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
 
         # ── TECHNICAL INDICATORS ─────────────────────────────────────────────
+        # Visible at every level (per spec: show but simplify for Beginner),
+        # with a level-appropriate plain-language explainer line swapped in
+        # above the methodology disclaimer.
         try:
             from src.analytics import technical_snapshot
             tech = technical_snapshot(price_hist)
@@ -1199,6 +1301,12 @@ else:
 
         if tech:
             st.markdown("<div class='tt-section-label'>TECHNICAL INDICATORS</div>", unsafe_allow_html=True)
+
+            st.markdown(
+                f"<div class='tt-plain-explain'><span class='tt-plain-explain-icon'>💡</span>"
+                f"<span>{plain_explainer('technical', level)}</span></div>",
+                unsafe_allow_html=True,
+            )
             st.markdown(
                 "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
                 "<span>These describe <b>past</b> price action using standard textbook formulas. "
@@ -1211,18 +1319,33 @@ else:
             cells = []
             if "rsi" in tech:
                 r = tech["rsi"]
-                cells.append(("RSI (14)", f"{r['value']}", r["label"], tone_class.get(r["tone"], "tt-tag-neutral")))
+                rsi_label = r["label"] if not is_beginner(level) else (
+                    "Price has risen a lot recently" if r["tone"] == "warn" and r["value"] >= 70 else
+                    "Price has fallen a lot recently" if r["tone"] == "warn" else
+                    "Nothing extreme either way"
+                )
+                cells.append(("RSI (14)", f"{r['value']}", rsi_label, tone_class.get(r["tone"], "tt-tag-neutral")))
             if "macd" in tech:
                 mc_ = tech["macd"]
-                cells.append(("MACD", f"{mc_['macd']}", mc_["label"], tone_class.get(mc_["tone"], "tt-tag-neutral")))
-            if "macd" in tech:
+                macd_label = mc_["label"] if not is_beginner(level) else (
+                    "Momentum leaning positive" if mc_["tone"] == "good" else "Momentum leaning negative"
+                )
+                cells.append(("MACD", f"{mc_['macd']}", macd_label, tone_class.get(mc_["tone"], "tt-tag-neutral")))
+            # Signal line / histogram detail: Learner and above only — for
+            # Beginner this is one level of detail too deep per the spec.
+            if "macd" in tech and not is_beginner(level):
                 mc_ = tech["macd"]
                 cells.append(("Signal Line", f"{mc_['signal']}", f"Histogram {mc_['histogram']:+.2f}", "tt-tag-neutral"))
             if "bollinger" in tech:
                 bb_ = tech["bollinger"]
-                cells.append((f"Bollinger ({currency})",
+                bb_label = bb_["label"] if not is_beginner(level) else (
+                    "Price is near the top of its recent range" if bb_["tone"] == "warn" and "upper" in bb_["label"].lower() else
+                    "Price is near the bottom of its recent range" if bb_["tone"] == "warn" else
+                    "Price is in the middle of its recent range"
+                )
+                cells.append((f"Price Range ({currency})" if is_beginner(level) else f"Bollinger ({currency})",
                               f"{bb_['lower']:.0f} — {bb_['upper']:.0f}",
-                              bb_["label"], tone_class.get(bb_["tone"], "tt-tag-neutral")))
+                              bb_label, tone_class.get(bb_["tone"], "tt-tag-neutral")))
 
             grid_html = "<div class='tt-num-grid'>"
             for label, value, tag, tone_cls in cells:
@@ -1247,12 +1370,25 @@ else:
 
         if peer_data and peer_data.get("rows"):
             st.markdown("<div class='tt-section-label'>PEER COMPARISON</div>", unsafe_allow_html=True)
+
+            st.markdown(
+                f"<div class='tt-plain-explain'><span class='tt-plain-explain-icon'>💡</span>"
+                f"<span>{plain_explainer('peers', level)}</span></div>",
+                unsafe_allow_html=True,
+            )
             st.markdown(
                 "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
                 "<span>Ratios fetched live for this stock and its closest listed peers. "
                 "Useful for relative context — a high P/E only means something next to similar companies.</span></div>",
                 unsafe_allow_html=True,
             )
+
+            # Column count capped per level: Beginner sees Company/P/E/P/B
+            # only; higher levels see the full set including ROE, Margin,
+            # Market Cap.
+            peer_col_cap = MAX_PEER_COLUMNS.get(level_rank(level), 5)
+            all_columns  = ["Company", "P/E", "P/B", "ROE", "Margin", "Mkt Cap"]
+            shown_columns = all_columns[:peer_col_cap]
 
             rows_html = ""
             for row in peer_data["rows"]:
@@ -1270,20 +1406,17 @@ else:
                         mcap_v = f"{mc_val/1e9:.1f}B"
                     else:
                         mcap_v = f"{mc_val/1e6:.0f}M"
-                rows_html += (
-                    f"<tr class='{cls}'>"
-                    f"<td>{row['name']}</td>"
-                    f"<td>{pe_v}</td><td>{pb_v}</td><td>{roe_v}</td>"
-                    f"<td>{margin_v}</td><td>{mcap_v}</td>"
-                    f"</tr>"
-                )
 
+                all_cells = [row['name'], pe_v, pb_v, roe_v, margin_v, mcap_v]
+                shown_cells = all_cells[:peer_col_cap]
+                cells_html = "".join(f"<td>{c}</td>" for c in shown_cells)
+                rows_html += f"<tr class='{cls}'>{cells_html}</tr>"
+
+            header_html = "".join(f"<th>{c}</th>" for c in shown_columns)
             table_html = f"""
             <div class="tt-panel">
                 <table class="tt-table">
-                    <thead><tr>
-                        <th>Company</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Margin</th><th>Mkt Cap</th>
-                    </tr></thead>
+                    <thead><tr>{header_html}</tr></thead>
                     <tbody>{rows_html}</tbody>
                 </table>
             </div>"""
@@ -1292,55 +1425,73 @@ else:
             st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
 
         # ── HISTORICAL FINANCIALS TREND ──────────────────────────────────────
-        try:
-            from src.analytics import fetch_historical_financials
-            fin_trend = fetch_historical_financials(ticker)
-        except Exception:
-            fin_trend = {}
+        # Shown for Learner and above only — for a complete Beginner, a
+        # multi-year revenue/net-income trend chart adds more confusion than
+        # value at this stage (it's the one section gated off entirely,
+        # since it's pure historical-statement reading rather than a
+        # "current snapshot" like the others).
+        if not is_beginner(level):
+            try:
+                from src.analytics import fetch_historical_financials
+                fin_trend = fetch_historical_financials(ticker)
+            except Exception:
+                fin_trend = {}
 
-        if fin_trend and fin_trend.get("years"):
-            st.markdown("<div class='tt-section-label'>HISTORICAL FINANCIALS</div>", unsafe_allow_html=True)
+            if fin_trend and fin_trend.get("years"):
+                st.markdown("<div class='tt-section-label'>HISTORICAL FINANCIALS</div>", unsafe_allow_html=True)
+                st.markdown(
+                    "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
+                    "<span>Annual figures as reported, most recent years available. "
+                    "Shows trend direction only — not adjusted for one-off items or accounting changes.</span></div>",
+                    unsafe_allow_html=True,
+                )
+
+                fin_fig = go.Figure()
+                years = fin_trend["years"]
+                if fin_trend.get("revenue"):
+                    fin_fig.add_trace(go.Bar(
+                        x=years, y=fin_trend["revenue"], name="Revenue",
+                        marker_color="#6366f1", opacity=0.85,
+                    ))
+                if fin_trend.get("net_income"):
+                    fin_fig.add_trace(go.Bar(
+                        x=years, y=fin_trend["net_income"], name="Net Income",
+                        marker_color="#ff8c00", opacity=0.85,
+                    ))
+                fin_fig.update_layout(
+                    barmode="group",
+                    paper_bgcolor="#222836", plot_bgcolor="#222836",
+                    font=dict(color="#94a3b8", size=11),
+                    height=300,
+                    margin=dict(l=12, r=12, t=12, b=12),
+                    xaxis=dict(gridcolor="#2d3548", showgrid=False),
+                    yaxis=dict(gridcolor="#2d3548", showgrid=True, zeroline=False),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                                xanchor="right", x=1, bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
+                )
+                st.plotly_chart(fin_fig, use_container_width=True)
+
+                # Net margin trend cells: Intermediate+ only — Learner gets
+                # the chart but not this extra derived-metric row.
+                if fin_trend.get("net_margin") and not is_learner(level):
+                    margin_cells = "".join(
+                        f"<div class='tt-num-cell'><div class='tt-num-label'>{y} margin</div>"
+                        f"<div class='tt-num-value' style='font-size:14px;'>{m}%</div></div>"
+                        for y, m in zip(years, fin_trend["net_margin"]) if m is not None
+                    )
+                    st.markdown(f"<div class='tt-num-grid'>{margin_cells}</div>", unsafe_allow_html=True)
+
+                st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
+        else:
+            # Beginner notice explaining why this section is condensed —
+            # keeps the promise transparent rather than silently vanishing.
             st.markdown(
-                "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
-                "<span>Annual figures as reported, most recent years available. "
-                "Shows trend direction only — not adjusted for one-off items or accounting changes.</span></div>",
+                "<div class='tt-plain-explain'><span class='tt-plain-explain-icon'>💡</span>"
+                "<span>We've kept multi-year financial statement trends out of the Beginner view to "
+                "avoid overload — switch to Learner or above (via 'Change Level' up top) to see "
+                "revenue and profit history charts.</span></div>",
                 unsafe_allow_html=True,
             )
-
-            fin_fig = go.Figure()
-            years = fin_trend["years"]
-            if fin_trend.get("revenue"):
-                fin_fig.add_trace(go.Bar(
-                    x=years, y=fin_trend["revenue"], name="Revenue",
-                    marker_color="#6366f1", opacity=0.85,
-                ))
-            if fin_trend.get("net_income"):
-                fin_fig.add_trace(go.Bar(
-                    x=years, y=fin_trend["net_income"], name="Net Income",
-                    marker_color="#ff8c00", opacity=0.85,
-                ))
-            fin_fig.update_layout(
-                barmode="group",
-                paper_bgcolor="#222836", plot_bgcolor="#222836",
-                font=dict(color="#94a3b8", size=11),
-                height=300,
-                margin=dict(l=12, r=12, t=12, b=12),
-                xaxis=dict(gridcolor="#2d3548", showgrid=False),
-                yaxis=dict(gridcolor="#2d3548", showgrid=True, zeroline=False),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                            xanchor="right", x=1, bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
-            )
-            st.plotly_chart(fin_fig, use_container_width=True)
-
-            if fin_trend.get("net_margin"):
-                margin_cells = "".join(
-                    f"<div class='tt-num-cell'><div class='tt-num-label'>{y} margin</div>"
-                    f"<div class='tt-num-value' style='font-size:14px;'>{m}%</div></div>"
-                    for y, m in zip(years, fin_trend["net_margin"]) if m is not None
-                )
-                st.markdown(f"<div class='tt-num-grid'>{margin_cells}</div>", unsafe_allow_html=True)
-
-            st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
 
         # ── CORRELATION & VOLATILITY VS INDEX ────────────────────────────────
         try:
@@ -1351,6 +1502,12 @@ else:
 
         if corr_data:
             st.markdown("<div class='tt-section-label'>CORRELATION & VOLATILITY</div>", unsafe_allow_html=True)
+
+            st.markdown(
+                f"<div class='tt-plain-explain'><span class='tt-plain-explain-icon'>💡</span>"
+                f"<span>{plain_explainer('correlation', level)}</span></div>",
+                unsafe_allow_html=True,
+            )
             st.markdown(
                 "<div class='tt-disclaimer'><span class='tt-disclaimer-icon'>ℹ️</span>"
                 f"<span>Measures how this stock's daily moves have related to the "
@@ -1358,13 +1515,21 @@ else:
                 unsafe_allow_html=True,
             )
 
+            beta_label = "Beta (est.)" if not is_beginner(level) else "Market sensitivity"
             cv_cells = [
                 ("Correlation", f"{corr_data['correlation']:.2f}", corr_data["correlation_label"], "tt-tag-neutral"),
-                ("Beta (est.)", f"{corr_data['beta_estimate']:.2f}" if corr_data.get("beta_estimate") is not None else "—",
+                (beta_label, f"{corr_data['beta_estimate']:.2f}" if corr_data.get("beta_estimate") is not None else "—",
                  "vs " + corr_data["benchmark_name"], "tt-tag-neutral"),
                 ("Stock Volatility", f"{corr_data['stock_volatility']}%", "annualised", "tt-tag-warn" if corr_data["stock_volatility"] > corr_data["bench_volatility"] else "tt-tag-good"),
-                (f"{corr_data['benchmark_name']} Volatility", f"{corr_data['bench_volatility']}%", "annualised", "tt-tag-neutral"),
             ]
+            # Benchmark-volatility comparison cell: Learner+ only — for
+            # Beginner, three cells (correlation/beta/own-volatility) is
+            # the right amount; a 4th comparison cell is one too many.
+            if not is_beginner(level):
+                cv_cells.append(
+                    (f"{corr_data['benchmark_name']} Volatility", f"{corr_data['bench_volatility']}%", "annualised", "tt-tag-neutral")
+                )
+
             grid2 = "<div class='tt-num-grid'>"
             for label, value, tag, tone_cls in cv_cells:
                 grid2 += (
@@ -1380,9 +1545,19 @@ else:
             st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
 
         # ── SIGNALS ───────────────────────────────────────────────────────────
+        # Count capped per level — Beginner sees the most decisive few
+        # signals only, Expert sees everything the rule engine produced.
         st.markdown(f"<div class='tt-section-label'>{t('signals')}</div>", unsafe_allow_html=True)
+
+        sig_cap = MAX_SIGNALS_SHOWN.get(level_rank(level), 99)
+        # Prioritise WARNING signals first so capping never hides a risk
+        # in favour of a neutral/positive one.
+        warning_sigs = [s for s in signals if "WARNING" in s]
+        other_sigs   = [s for s in signals if "WARNING" not in s]
+        shown_signals = (warning_sigs + other_sigs)[:sig_cap]
+
         sig_html = ""
-        for s in signals:
+        for s in shown_signals:
             if "WARNING" in s:
                 sig_html += f'<span class="chip-red">⚠ {s}</span>'
             elif any(k in s for k in ("STRONG", "HIGH ROE", "VERY LOW debt",
@@ -1390,6 +1565,8 @@ else:
                 sig_html += f'<span class="chip-green">✓ {s}</span>'
             else:
                 sig_html += f'<span class="chip-amber">ℹ {s}</span>'
+        if len(signals) > sig_cap:
+            sig_html += f'<span class="chip-amber">+{len(signals) - sig_cap} more (raise your level to see all)</span>'
         st.markdown(f'<div class="tt-card" style="padding:16px;">{sig_html}</div>', unsafe_allow_html=True)
 
         st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
@@ -1459,7 +1636,7 @@ else:
         st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
 
         # ── BEGINNER EXPLAINER ────────────────────────────────────────────────
-        if "Beginner" in level or "🌱" in level:
+        if is_beginner(level):
             st.markdown(f"<div class='tt-section-label'>{t('beginner_guide')}</div>", unsafe_allow_html=True)
             rows = [
                 ("P/E Ratio",      "How much you pay for every ₹1 of company profit. Lower is generally cheaper."),
