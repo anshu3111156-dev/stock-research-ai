@@ -1,92 +1,65 @@
 def get_currency_symbol(ticker):
     ticker = str(ticker).upper()
 
-    if ticker.endswith(".NS") or ticker.endswith(".BO"):
-        return "₹"
-    if ticker.endswith(".L"):
-        return "£"
-    if ticker.endswith(".PA") or ticker.endswith(".NX"):
-        return "€"
-    if ticker.endswith(".DE") or ticker.endswith(".F"):
-        return "€"
-    if ticker.endswith(".AS"):
-        return "€"
-    if ticker.endswith(".MC"):
-        return "€"
-    if ticker.endswith(".MI"):
-        return "€"
-    if ticker.endswith(".BR"):
-        return "€"
-    if ticker.endswith(".VI"):
-        return "€"
-    if ticker.endswith(".LS"):
-        return "€"
-    if ticker.endswith(".HE"):
-        return "€"
-    if ticker.endswith(".AT"):
-        return "€"
-    if ticker.endswith(".SW"):
-        return "CHF "
-    if ticker.endswith(".T"):
-        return "¥"
-    if ticker.endswith(".SS") or ticker.endswith(".SZ"):
-        return "¥"
-    if ticker.endswith(".HK"):
-        return "HK$"
-    if ticker.endswith(".AX"):
-        return "A$"
-    if ticker.endswith(".TO") or ticker.endswith(".V"):
-        return "C$"
-    if ticker.endswith(".SA"):
-        return "R$"
-    if ticker.endswith(".KS") or ticker.endswith(".KQ"):
-        return "₩"
-    if ticker.endswith(".SI"):
-        return "S$"
-    if ticker.endswith(".ST"):
-        return "kr "
-    if ticker.endswith(".OL"):
-        return "kr "
-    if ticker.endswith(".CO"):
-        return "kr "
-    if ticker.endswith(".MX"):
-        return "MX$"
-    if ticker.endswith(".JO"):
-        return "R"
-    if ticker.endswith(".SR"):
-        return "﷼"
-    if ticker.endswith(".AD") or ticker.endswith(".DU"):
-        return "AED "
-    if ticker.endswith(".NZ"):
-        return "NZ$"
-    if ticker.endswith(".BK"):
-        return "฿"
-    if ticker.endswith(".KL"):
-        return "RM"
-    if ticker.endswith(".JK"):
-        return "Rp"
-    if ticker.endswith(".TW"):
-        return "NT$"
-    if ticker.endswith(".TA"):
-        return "₪"
-    if ticker.endswith(".IS"):
-        return "₺"
-    if ticker.endswith(".ME"):
-        return "₽"
+    suffix_map = {
+        ".NS": "₹", ".BO": "₹",
+        ".L": "£",
+        ".PA": "€", ".NX": "€", ".DE": "€", ".F": "€", ".AS": "€",
+        ".MC": "€", ".MI": "€", ".BR": "€", ".VI": "€", ".LS": "€",
+        ".HE": "€", ".AT": "€",
+        ".SW": "CHF ",
+        ".T": "¥",
+        ".SS": "¥", ".SZ": "¥",
+        ".HK": "HK$",
+        ".AX": "A$",
+        ".TO": "C$", ".V": "C$",
+        ".SA": "R$",
+        ".KS": "₩", ".KQ": "₩",
+        ".SI": "S$",
+        ".ST": "kr ", ".OL": "kr ", ".CO": "kr ",
+        ".MX": "MX$",
+        ".JO": "R",
+        ".SR": "﷼",
+        ".AD": "AED ", ".DU": "AED ",
+        ".NZ": "NZ$",
+        ".BK": "฿",
+        ".KL": "RM",
+        ".JK": "Rp",
+        ".TW": "NT$",
+        ".TA": "₪",
+        ".IS": "₺",
+        ".ME": "₽",
+    }
+    for suffix, symbol in suffix_map.items():
+        if ticker.endswith(suffix):
+            return symbol
     return "$"
 
 
 def format_number(value, ticker=""):
+    """Big numbers (revenue, market cap, FCF) in local-currency-appropriate units."""
     if value == "N/A" or value is None:
+        return "N/A"
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
         return "N/A"
     symbol = get_currency_symbol(ticker)
     if symbol == "₹":
         return f"₹{value / 1e7:,.2f} Crore"
-    return f"{symbol}{value / 1e9:,.2f} Billion"
+    if abs(value) >= 1e9:
+        return f"{symbol}{value / 1e9:,.2f} Billion"
+    if abs(value) >= 1e6:
+        return f"{symbol}{value / 1e6:,.2f} Million"
+    return f"{symbol}{value:,.2f}"
 
 
 def format_price(value, ticker=""):
     if value == "N/A" or value is None:
+        return "N/A"
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
         return "N/A"
     symbol = get_currency_symbol(ticker)
     return f"{symbol}{value:,.2f}"
@@ -95,49 +68,63 @@ def format_price(value, ticker=""):
 def format_ratio(value):
     if value == "N/A" or value is None:
         return "N/A"
-    return f"{value:.2f}"
+    try:
+        return f"{float(value):.2f}"
+    except (TypeError, ValueError):
+        return "N/A"
 
 
 def format_percent(value):
+    """Expects a fraction (0.12 -> 12.00%). Caps absurd values as a data-quality guard."""
     if value == "N/A" or value is None:
         return "N/A"
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return "N/A"
     result = value * 100
-    if result > 20:
+    if abs(result) > 1000:
         return "N/A (data error)"
     return f"{result:.2f}%"
 
 
 def build_stock_prompt(data, signals, ticker=""):
-    signals_text = "\n".join([f"- {s}" for s in signals])
+    signals_text = "\n".join([f"- {s}" for s in signals]) if signals else "- None detected"
     return f"""
 Analyse this stock and return a JSON research brief.
 
-Company: {data['name']}
-Sector: {data['sector']}
-Industry: {data['industry']}
+Company: {data.get('name', 'N/A')}
+Sector: {data.get('sector', 'N/A')}
+Industry: {data.get('industry', 'N/A')}
 
 --- PRICE & VALUATION ---
-Latest Price:          {format_price(data['price'], ticker)}
-P/E Ratio:             {format_ratio(data['pe'])}
-P/B Ratio:             {format_ratio(data['pb_ratio'])}
-EPS:                   {format_price(data['eps'], ticker)}
-Dividend Yield:        {format_percent(data['dividend_yield'])}
-1-Year Price Change:   {format_ratio(data['price_change_1y'])}%
+Latest Price:          {format_price(data.get('price'), ticker)}
+P/E Ratio:             {format_ratio(data.get('pe'))}
+Forward P/E:           {format_ratio(data.get('forward_pe'))}
+P/B Ratio:             {format_ratio(data.get('pb_ratio'))}
+EV/EBITDA:             {format_ratio(data.get('ev_to_ebitda'))}
+EPS:                   {format_price(data.get('eps'), ticker)}
+Dividend Yield:        {format_percent(data.get('dividend_yield'))}
+1-Year Price Change:   {format_ratio(data.get('price_change_1y'))}%
+Beta:                  {format_ratio(data.get('beta'))}
+Analyst Target Price:  {format_price(data.get('target_price'), ticker)}
+Analyst Recommendation:{data.get('recommendation', 'N/A')}
 
 --- FINANCIALS ---
-Total Revenue:         {format_number(data['revenue'], ticker)}
-Market Cap:            {format_number(data['market_cap'], ticker)}
-Revenue Growth (YoY):  {format_percent(data['revenue_growth'])}
-Earnings Growth (YoY): {format_percent(data['earnings_growth'])}
+Total Revenue:         {format_number(data.get('revenue'), ticker)}
+Market Cap:            {format_number(data.get('market_cap'), ticker)}
+Free Cash Flow:        {format_number(data.get('free_cashflow'), ticker)}
+Revenue Growth (YoY):  {format_percent(data.get('revenue_growth'))}
+Earnings Growth (YoY): {format_percent(data.get('earnings_growth'))}
 
 --- PROFITABILITY & RISK ---
-Profit Margin:         {format_percent(data['profit_margin'])}
-Return on Equity:      {format_percent(data['roe'])}
-Debt to Equity:        {format_ratio(data['debt_to_equity'])}
+Profit Margin:         {format_percent(data.get('profit_margin'))}
+Return on Equity:      {format_percent(data.get('roe'))}
+Debt to Equity:        {format_ratio(data.get('debt_to_equity'))}
 
 --- SIGNALS DETECTED ---
 {signals_text}
 
 --- ABOUT ---
-{data['summary']}
+{data.get('summary', 'N/A')}
 """.strip()
