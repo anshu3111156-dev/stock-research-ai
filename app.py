@@ -1112,6 +1112,7 @@ else:
                 </div>""", unsafe_allow_html=True)
 
     # ── SEARCH / HOME ─────────────────────────────────────────────────────────
+   # ── SEARCH / HOME ─────────────────────────────────────────────────────────
     elif st.session_state.current_page in ("home", "search"):
 
         st.markdown(f"""
@@ -1123,63 +1124,50 @@ else:
 
         _, mid, _ = st.columns([1, 4, 1])
         with mid:
+
+            # ── MAIN SEARCH BAR ───────────────────────────────────────────────
             query = st.text_input(
                 "", placeholder="🔍  Search — Reliance, Apple, HDFC Bank, Tesla...",
                 label_visibility="collapsed", key="main_search",
             )
 
-            st.markdown(
-                "<div style='text-align:center;color:#475569;font-size:12px;"
-                "margin:14px 0 6px;'>— or browse by exchange —</div>",
-                unsafe_allow_html=True,
-            )
-            exc_options = ["— Select exchange —"] + list(COMPANIES_BY_EXCHANGE.keys())
-            sel_exc = st.selectbox("", exc_options, label_visibility="collapsed", key="exc_sel")
-
-            if sel_exc != "— Select exchange —":
-                cos    = COMPANIES_BY_EXCHANGE[sel_exc]
-                co_opts = ["— Choose a company —"] + list(cos.keys())
-                sel_co  = st.selectbox("", co_opts, label_visibility="collapsed", key="co_sel")
-                if sel_co not in ("— Choose a company —", ""):
-                    ticker = cos[sel_co]
-                    st.caption(f"Symbol: `{ticker}`")
-                    st.markdown('<div class="primary-cta">', unsafe_allow_html=True)
-                    if st.button(f"📊 {t('analyse_btn')}: {sel_co}", use_container_width=True, key="analyse_exchange"):
+            # Search button — always visible below the search bar
+            st.markdown('<div class="primary-cta">', unsafe_allow_html=True)
+            if st.button("🔍  Search", use_container_width=True, key="search_go"):
+                if query and len(query) >= 2:
+                    matches = {n: tk for n, tk in ALL_COMPANIES.items() if query.lower() in n.lower()}
+                    if matches:
+                        first_name   = list(matches.keys())[0]
+                        first_ticker = matches[first_name]
                         if rate_ok():
-                            st.session_state.selected_ticker       = ticker
-                            st.session_state.selected_company_name = sel_co
+                            st.session_state.selected_ticker       = first_ticker
+                            st.session_state.selected_company_name = first_name
                             st.session_state.current_page          = "analysis"
                             st.rerun()
-                    st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(
-                    f"<div style='color:#475569;font-size:12px;margin:10px 0 4px;'>{t('or_ticker')}</div>",
-                    unsafe_allow_html=True,
-                )
-                manual = st.text_input(
-                    "", placeholder="e.g. RELIANCE.NS / TSLA / AAPL",
-                    label_visibility="collapsed", key="manual_t",
-                )
-                if manual:
-                    clean = sanitise_ticker(manual)
-                    if clean is None:
-                        st.error(t("invalid_ticker"))
                     else:
-                        st.markdown('<div class="primary-cta">', unsafe_allow_html=True)
-                        if st.button(f"📊 {t('analyse_btn')}: {clean}", use_container_width=True, key="manual_go"):
+                        # No match in database — treat the query as a raw ticker
+                        clean = sanitise_ticker(query)
+                        if clean:
                             if rate_ok():
                                 st.session_state.selected_ticker       = clean
                                 st.session_state.selected_company_name = clean
                                 st.session_state.current_page          = "analysis"
                                 st.rerun()
-                        st.markdown('</div>', unsafe_allow_html=True)
+                        else:
+                            st.warning(t("not_found"))
+                else:
+                    st.warning("Please type a company name or ticker to search.")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # Live search suggestions
-        if query and len(query) >= 2:
-            matches = {n: tk for n, tk in ALL_COMPANIES.items() if query.lower() in n.lower()}
-            _, mc, _ = st.columns([1, 4, 1])
-            with mc:
+            # ── LIVE SEARCH SUGGESTIONS ───────────────────────────────────────
+            if query and len(query) >= 2:
+                matches = {n: tk for n, tk in ALL_COMPANIES.items() if query.lower() in n.lower()}
                 if matches:
+                    st.markdown(
+                        "<div style='color:#475569;font-size:11px;margin:12px 0 6px;'>"
+                        "MATCHING COMPANIES</div>",
+                        unsafe_allow_html=True,
+                    )
                     for name, tkr in list(matches.items())[:8]:
                         s1, s2 = st.columns([5, 1])
                         with s1:
@@ -1202,23 +1190,96 @@ else:
                         unsafe_allow_html=True,
                     )
 
-        # Popular stocks
+            # ── BROWSE BY EXCHANGE ────────────────────────────────────────────
+            if not query:
+                st.markdown(
+                    "<div style='text-align:center;color:#475569;font-size:12px;"
+                    "margin:20px 0 10px;'>— or browse by exchange —</div>",
+                    unsafe_allow_html=True,
+                )
+                exc_options = ["— Select exchange —"] + list(COMPANIES_BY_EXCHANGE.keys())
+                sel_exc = st.selectbox(
+                    "", exc_options,
+                    label_visibility="collapsed", key="exc_sel"
+                )
+
+                if sel_exc != "— Select exchange —":
+                    cos     = COMPANIES_BY_EXCHANGE[sel_exc]
+                    co_opts = ["— Choose a company —"] + list(cos.keys())
+                    sel_co  = st.selectbox(
+                        "", co_opts,
+                        label_visibility="collapsed", key="co_sel"
+                    )
+                    if sel_co not in ("— Choose a company —", ""):
+                        ticker = cos[sel_co]
+                        st.caption(f"Symbol: `{ticker}`")
+                        st.markdown('<div class="primary-cta">', unsafe_allow_html=True)
+                        if st.button(
+                            f"📊 Analyse: {sel_co}",
+                            use_container_width=True,
+                            key="analyse_exchange"
+                        ):
+                            if rate_ok():
+                                st.session_state.selected_ticker       = ticker
+                                st.session_state.selected_company_name = sel_co
+                                st.session_state.current_page          = "analysis"
+                                st.rerun()
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                else:
+                    # Manual ticker input as fallback
+                    st.markdown(
+                        f"<div style='color:#475569;font-size:12px;margin:16px 0 4px;'>"
+                        f"{t('or_ticker')}</div>",
+                        unsafe_allow_html=True,
+                    )
+                    manual = st.text_input(
+                        "", placeholder="e.g. RELIANCE.NS / TSLA / AAPL",
+                        label_visibility="collapsed", key="manual_t",
+                    )
+                    if manual:
+                        clean = sanitise_ticker(manual)
+                        if clean is None:
+                            st.error(t("invalid_ticker"))
+                        else:
+                            st.markdown('<div class="primary-cta">', unsafe_allow_html=True)
+                            if st.button(
+                                f"📊 Analyse: {clean}",
+                                use_container_width=True,
+                                key="manual_go"
+                            ):
+                                if rate_ok():
+                                    st.session_state.selected_ticker       = clean
+                                    st.session_state.selected_company_name = clean
+                                    st.session_state.current_page          = "analysis"
+                                    st.rerun()
+                            st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── POPULAR STOCKS ────────────────────────────────────────────────────
         if not query:
             st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
-            st.markdown(f"<div class='tt-section-label'>{t('popular')}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='tt-section-label'>{t('popular')}</div>",
+                unsafe_allow_html=True
+            )
             pc = st.columns(4)
             for i, (name, tkr) in enumerate(POPULAR.items()):
                 with pc[i % 4]:
+                    st.markdown('<div class="primary-cta">', unsafe_allow_html=True)
                     if st.button(name, key=f"pop_{tkr}", use_container_width=True):
                         if rate_ok():
                             st.session_state.selected_ticker       = tkr
                             st.session_state.selected_company_name = name
                             st.session_state.current_page          = "analysis"
                             st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-            # How it works
+            # ── HOW IT WORKS ──────────────────────────────────────────────────
             st.markdown("<hr class='tt-divider'>", unsafe_allow_html=True)
-            st.markdown(f"<div class='tt-section-label'>{t('how_it_works')}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='tt-section-label'>{t('how_it_works')}</div>",
+                unsafe_allow_html=True
+            )
             hw1, hw2, hw3, hw4 = st.columns(4)
             for col, icon, title, desc in [
                 (hw1, "🔍", "Search",      "Type any company from NSE, BSE or NYSE"),
@@ -1233,7 +1294,6 @@ else:
                         <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">{title}</div>
                         <div style="font-size:12px;color:#64748b;line-height:1.55;">{desc}</div>
                     </div>""", unsafe_allow_html=True)
-
     # ── ANALYSIS PAGE ─────────────────────────────────────────────────────────
     if st.session_state.current_page == "analysis" and st.session_state.selected_ticker:
 
