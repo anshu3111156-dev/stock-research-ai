@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockAI — Equity Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="tt-navbar">
+  <div class="tt-logo">
+    <span class="tt-logo-dot"></span>StockAI
+  </div>
+  <div class="tt-nav-right">
+    <span class="tt-nav-tag">Groq · yfinance · RAG</span>
+    <span class="tt-not-advice">Not financial advice</span>
+  </div>
+</nav>
+
+<!-- TICKER STRIP -->
+<div class="tt-strip" id="strip">
+  <div class="tt-strip-inner" id="stripInner">
+    <span class="tt-strip-item"><span class="tt-strip-name" style="color:#475569;">Loading market data…</span></span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PAGE: LEVEL SELECTOR
+════════════════════════════════════════════════════ -->
+<div id="page-level" class="page active">
+  <div class="tt-hero">
+    <div class="tt-hero-title">Smart research for<br><span class="tt-hero-accent">every investor.</span></div>
+    <div class="tt-hero-sub">AI-powered equity analysis from NSE, BSE, NYSE and 25+ global exchanges</div>
+  </div>
+  <p class="level-prompt">Tell us your investing experience so we can tailor the analysis for you</p>
+  <div class="level-grid">
+    <div class="tt-level-card" data-level="🌱 Beginner">
+      <div class="tt-level-icon">🌱</div>
+      <div class="tt-level-name">Beginner</div>
+      <div class="tt-level-desc">Never invested before or just getting started</div>
+    </div>
+    <div class="tt-level-card" data-level="📈 Learner">
+      <div class="tt-level-icon">📈</div>
+      <div class="tt-level-name">Learner</div>
+      <div class="tt-level-desc">Know the basics, still learning</div>
+    </div>
+    <div class="tt-level-card" data-level="💼 Intermediate">
+      <div class="tt-level-icon">💼</div>
+      <div class="tt-level-name">Intermediate</div>
+      <div class="tt-level-desc">Comfortable with P/E, ROE and basic analysis</div>
+    </div>
+    <div class="tt-level-card" data-level="🏦 Expert">
+      <div class="tt-level-icon">🏦</div>
+      <div class="tt-level-name">Expert</div>
+      <div class="tt-level-desc">Deep market knowledge, technical analysis</div>
+    </div>
+  </div>
+  <div class="tt-footer-note">Trusted analysis · Live market data · Not financial advice</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PAGE: SEARCH / HOME
+════════════════════════════════════════════════════ -->
+<div id="page-search" class="page">
+  <!-- top bar -->
+  <div class="topbar">
+    <div id="level-badge" class="tt-badge"></div>
+    <span class="topbar-note">Analysis tailored to your experience level</span>
+    <div class="topbar-actions">
+      <button class="btn-ghost" id="btn-glossary">📖 Glossary</button>
+      <button class="btn-ghost" id="btn-change-level">↩ Change Level</button>
+    </div>
+  </div>
+  <hr class="tt-divider">
+
+  <div class="search-hero">
+    <h2>Search any company</h2>
+    <p>Type a company name or browse by exchange below</p>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-box-row">
+      <input id="search-input" type="text" placeholder="🔍  Search — Reliance, Apple, HDFC Bank, Tesla…" autocomplete="off">
+      <button class="btn-primary" id="btn-search">Search</button>
+    </div>
+    <div id="search-suggestions"></div>
+
+    <!-- browse by exchange -->
+    <div id="browse-section">
+      <p class="browse-label">— or browse by exchange —</p>
+      <select id="exc-select"><option value="">— Select exchange —</option></select>
+      <select id="co-select" style="display:none"><option value="">— Choose a company —</option></select>
+      <div id="browse-cta"></div>
+
+      <p class="manual-label">Or enter a ticker manually (e.g. RELIANCE.NS / TSLA)</p>
+      <input id="manual-ticker" type="text" placeholder="e.g. RELIANCE.NS / TSLA / AAPL" autocomplete="off">
+      <button class="btn-primary" id="btn-manual" style="margin-top:8px;width:100%;">📊 Analyse</button>
+    </div>
+  </div>
+
+  <hr class="tt-divider">
+  <div class="tt-section-label">POPULAR STOCKS</div>
+  <div class="popular-grid" id="popular-grid"></div>
+
+  <hr class="tt-divider">
+  <div class="tt-section-label">HOW IT WORKS</div>
+  <div class="how-grid">
+    <div class="tt-card how-card"><div class="how-icon">🔍</div><strong>Search</strong><p>Type any company from NSE, BSE or NYSE</p></div>
+    <div class="tt-card how-card"><div class="how-icon">📊</div><strong>Live Data</strong><p>Real-time financial data via yfinance</p></div>
+    <div class="tt-card how-card"><div class="how-icon">🤖</div><strong>AI Analysis</strong><p>Groq's Llama 3 writes a personalised brief</p></div>
+    <div class="tt-card how-card"><div class="how-icon">📋</div><strong>Your Report</strong><p>Valuation, health, risks and news in one view</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PAGE: GLOSSARY
+════════════════════════════════════════════════════ -->
+<div id="page-glossary" class="page">
+  <div class="topbar">
+    <div id="level-badge-g" class="tt-badge"></div>
+    <div class="topbar-actions">
+      <button class="btn-ghost" id="btn-glossary-back">← Back</button>
+      <button class="btn-ghost" id="btn-change-level-g">↩ Change Level</button>
+    </div>
+  </div>
+  <hr class="tt-divider">
+  <h2 style="margin-bottom:16px;letter-spacing:-0.5px;">📖 Financial Terms Glossary</h2>
+  <input id="gloss-search" type="text" placeholder="Search a term — e.g. P/E Ratio, ROE, Market Cap…" style="margin-bottom:16px;">
+  <div id="gloss-list"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PAGE: ANALYSIS
+════════════════════════════════════════════════════ -->
+<div id="page-analysis" class="page">
+  <div class="topbar">
+    <div id="level-badge-a" class="tt-badge"></div>
+    <div class="topbar-actions">
+      <button class="btn-ghost" id="btn-back">← Back to Search</button>
+      <button class="btn-ghost" id="btn-glossary-a">📖 Glossary</button>
+      <button class="btn-ghost" id="btn-change-level-a">↩ Change Level</button>
+    </div>
+  </div>
+  <hr class="tt-divider">
+
+  <!-- loading state -->
+  <div id="analysis-loading" style="text-align:center;padding:80px 0;">
+    <div class="spinner"></div>
+    <p id="loading-msg" style="color:#64748b;margin-top:20px;font-size:14px;">Fetching live market data…</p>
+  </div>
+
+  <!-- content (hidden until loaded) -->
+  <div id="analysis-content" style="display:none;">
+
+    <!-- Company header -->
+    <div class="tt-company-header" id="company-header"></div>
+
+    <!-- Traffic light (beginner only) -->
+    <div id="traffic-light-wrap"></div>
+
+    <!-- Key metrics -->
+    <div class="tt-section-label">KEY METRICS</div>
+    <div class="metrics-row" id="metrics-row"></div>
+    <div class="metrics-row" id="ext-metrics-row" style="margin-top:6px;"></div>
+
+    <!-- Price chart -->
+    <div id="chart-section">
+      <div class="tt-section-label">PRICE HISTORY — 1 YEAR</div>
+      <div id="price-chart"></div>
+      <div class="metrics-row" id="history-stats"></div>
+    </div>
+
+    <hr class="tt-divider">
+
+    <!-- Technical indicators -->
+    <div id="tech-section"></div>
+
+    <!-- Peer comparison -->
+    <div id="peer-section"></div>
+
+    <!-- Historical financials -->
+    <div id="fin-section"></div>
+
+    <!-- Correlation -->
+    <div id="corr-section"></div>
+
+    <!-- Signals -->
+    <div class="tt-section-label">SIGNALS DETECTED</div>
+    <div class="tt-card" id="signals-wrap" style="padding:16px;"></div>
+
+    <hr class="tt-divider">
+
+    <!-- AI brief -->
+    <div class="tt-section-label">AI RESEARCH BRIEF</div>
+    <div class="tt-disclaimer">
+      <span>🤖</span>
+      <span>Generated by an LLM from the data above. It can summarise fundamentals and phrase them clearly — it has no special ability to forecast price moves, and isn't a buy/sell recommendation.</span>
+    </div>
+    <div class="brief-grid">
+      <div class="brief-left" id="brief-left"></div>
+      <div class="brief-right" id="brief-right"></div>
+    </div>
+
+    <hr class="tt-divider">
+
+    <!-- News -->
+    <div id="news-section"></div>
+
+    <!-- Annual report / RAG -->
+    <div id="rag-section"></div>
+
+    <hr class="tt-divider">
+
+    <!-- Beginner explainer -->
+    <div id="beginner-section"></div>
+
+    <!-- Footer -->
+    <div class="tt-footer">StockAI · by Anshika Singh · Electronics Engineering, Banasthali Vidyapith · Powered by yfinance · Groq · RAG · Not financial advice</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     CHATBOT WIDGET (floating, site-wide)
+════════════════════════════════════════════════════ -->
+
+<!-- Bubble trigger -->
+<button class="chat-bubble" id="chatBubble" title="Ask StockAI">
+  <svg id="chatIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+  <svg id="closeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:none;">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+  <span class="chat-unread" id="chatUnread" style="display:none;">1</span>
+</button>
+
+<!-- Chat panel -->
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <div class="chat-avatar">🤖</div>
+      <div>
+        <div class="chat-title">StockAI Assistant</div>
+        <div class="chat-subtitle" id="chatSubtitle">General finance & investing</div>
+      </div>
+    </div>
+    <button class="chat-clear" id="chatClear" title="Clear chat">↺ Clear</button>
+  </div>
+
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-msg bot">
+      <div class="chat-bubble-msg">
+        👋 Hi! I'm your StockAI assistant. Ask me anything about investing, financial metrics, or the stock you're currently analysing.
+        <div class="chat-suggestions" id="chatSuggestions">
+          <button class="chat-sugg" data-q="What is P/E ratio and why does it matter?">What is P/E ratio?</button>
+          <button class="chat-sugg" data-q="How do I read a company's financial health?">How to read financial health?</button>
+          <button class="chat-sugg" data-q="What's the difference between NSE and BSE?">NSE vs BSE?</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-typing" id="chatTyping" style="display:none;">
+    <span></span><span></span><span></span>
+  </div>
+
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="Ask about stocks, metrics, investing…" autocomplete="off" maxlength="500">
+    <button class="chat-send" id="chatSend">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+  <div class="chat-disclaimer">Not financial advice · Powered by Groq Llama 3</div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/chat.js"></script>
+</body>
+</html>
